@@ -1,6 +1,6 @@
-# Edgenet
+# EdgeNet
 
-Edgenet **(working title)** is an implementation of an edge computing pipeline built using Python.
+EdgeNet **(working title)** is an implementation of an edge computing pipeline built using Python.
 
 ## Installation
 
