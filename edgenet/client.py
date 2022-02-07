@@ -1,6 +1,6 @@
 import uuid, asyncio, json
 import websockets
-from edgenet.message import EdgeNetMessage
+from .message import EdgeNetMessage
 
 
 class EdgeNetClient:

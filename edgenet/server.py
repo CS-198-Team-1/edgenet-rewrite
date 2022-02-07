@@ -1,8 +1,8 @@
 import asyncio
 import websockets
-from edgenet.session import EdgeNetSession
-from edgenet.message import EdgeNetMessage
-from edgenet.constants import *
+from .session import EdgeNetSession
+from .message import EdgeNetMessage
+from .constants import *
 
 
 class EdgeNetServer:

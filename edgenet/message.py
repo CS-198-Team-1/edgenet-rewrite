@@ -1,5 +1,5 @@
 import json
-from edgenet.constants import *
+from .constants import *
 
 
 class EdgeNetMessage:
