@@ -1,11 +1,11 @@
 import unittest, threading
 
 import websockets
-from client import EdgeNetClient
-from server import EdgeNetServer
-from session import EdgeNetSession
-from message import EdgeNetMessage
-from constants import *
+from edgenet.client import EdgeNetClient
+from edgenet.server import EdgeNetServer
+from edgenet.session import EdgeNetSession
+from edgenet.message import EdgeNetMessage
+from edgenet.constants import *
 
 
 class TestNetwork(unittest.TestCase):

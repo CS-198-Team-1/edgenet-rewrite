@@ -1,6 +1,6 @@
 import uuid, asyncio, json
 import websockets
-from message import EdgeNetMessage
+from edgenet.message import EdgeNetMessage
 
 
 class EdgeNetClient:
@@ -27,7 +27,7 @@ class EdgeNetClient:
             except ConnectionRefusedError:
                 # TODO: Implement exponential backoff for reconnecting
                 pass
-            
+
         handshake_message = EdgeNetMessage.create_client_handshake_message(self.session_id)
         await self.send(handshake_message)
         await self.connection.close()

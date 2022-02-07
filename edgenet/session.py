@@ -1,5 +1,5 @@
 import json
-from constants import *
+from edgenet.constants import *
 
 
 class EdgeNetSession:

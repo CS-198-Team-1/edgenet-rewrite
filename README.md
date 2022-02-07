@@ -19,7 +19,6 @@ Then, install the dependencies through `pip`:
 
 ```
 pip3 install -r requirements.txt
-
 ```
 
 ## Usage
