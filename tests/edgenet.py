@@ -1,4 +1,4 @@
-import unittest, threading, time
+import unittest, threading, time, asyncio
 from unittest.mock import patch
 import websockets
 from edgenet.client import EdgeNetClient
@@ -35,7 +35,7 @@ class TestNetwork(unittest.TestCase):
         self.assertNotIn(client.session_id, self.server.sessions)
 
         client.run()
-        time.sleep(1)
+        self.server.sleep(1)
 
         # Check if session_id is in server's sessions dict
         self.assertIn(client.session_id, self.server.sessions)
@@ -52,7 +52,7 @@ class TestNetwork(unittest.TestCase):
         self.assertTrue(session.websocket.open)
 
         client.close()
-        time.sleep(1)
+        self.server.sleep(1)
 
         self.assertTrue(session.websocket.closed)
         self.assertEqual(session.status, SESSION_DISCONNECTED)
@@ -79,6 +79,31 @@ class TestNetwork(unittest.TestCase):
         client.close()
 
         self.assertTrue(client.connection.closed)
+
+    def test_server_client_command(self):
+        """
+        Tests command calling to client
+        """
+        function_name = "my_special_sum"
+        function_method = lambda a, b : a + (b * 2)
+
+        args = [10, 200]
+        kwargs = {}
+        expected_result = function_method(*args, **kwargs)
+
+        client = EdgeNetClient(self.server_url)
+        client.run()
+        client.register_function(function_name, function_method)
+
+        self.server.sleep(1)
+
+        # asyncio.run(self.server.send_command(client.session_id, function_name, *args, **kwargs))
+
+        job = self.server.send_command_external(client.session_id, function_name, *args, **kwargs)
+
+        self.server.sleep(1)
+
+        self.assertIn(expected_result, job.raw_results)
 
 
 class TestMessage(unittest.TestCase):
