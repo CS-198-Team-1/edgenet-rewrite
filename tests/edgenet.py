@@ -1,5 +1,5 @@
-import unittest, threading
-
+import unittest, threading, time
+from unittest.mock import patch
 import websockets
 from edgenet.client import EdgeNetClient
 from edgenet.server import EdgeNetServer
@@ -14,7 +14,9 @@ class TestNetwork(unittest.TestCase):
         super().setUpClass()
 
         # Initialize the server + its thread
+        self.server_ip = "localhost"
         self.server_port = 9000
+        self.server_url = f"ws://{self.server_ip}:{self.server_port}"
         self.server = EdgeNetServer("localhost", self.server_port)
         self.server_thread = threading.Thread(target=self.server.run, daemon=True)
         self.server_thread.start()
@@ -27,9 +29,13 @@ class TestNetwork(unittest.TestCase):
         """
         Tests the server's handshake procedure.
         """
-        server_url = f"ws://localhost:{self.server_port}"
-        client = EdgeNetClient(server_url)
+        client = EdgeNetClient(self.server_url)
+
+        # Check if session_id is NOT YET in server's sessions dict
+        self.assertNotIn(client.session_id, self.server.sessions)
+
         client.run()
+        time.sleep(1)
 
         # Check if session_id is in server's sessions dict
         self.assertIn(client.session_id, self.server.sessions)
@@ -42,6 +48,37 @@ class TestNetwork(unittest.TestCase):
             session.websocket, 
             websockets.legacy.server.WebSocketServerProtocol
         )
+
+        self.assertTrue(session.websocket.open)
+
+        client.close()
+        time.sleep(1)
+
+        self.assertTrue(session.websocket.closed)
+        self.assertEqual(session.status, SESSION_DISCONNECTED)
+
+
+    def test_client_handshake(self):
+        """
+        Tests the client's handshake procedure.
+        """
+        client = EdgeNetClient(self.server_url)
+
+        # Check if client's connection is still None
+        self.assertIsNone(client.connection)
+
+        client.run()
+
+        # Check if client properly stored the connection
+        self.assertIsInstance(
+            client.connection, 
+            websockets.legacy.client.WebSocketClientProtocol
+        )
+        self.assertTrue(client.connection.open)
+
+        client.close()
+
+        self.assertTrue(client.connection.closed)
 
 
 class TestMessage(unittest.TestCase):
@@ -67,14 +104,17 @@ class TestSession(unittest.TestCase):
         """
         session_id = "abcdef"
         msg_type = MSG_CONNECTION
-        websocket = "DUMMY WEBSOCKET"
+
+        # Mock websocket object 
+        with patch("websockets.legacy.server.WebSocketServerProtocol") as ws:
+            ws.return_value.open = True
 
         raw_json = f'{{"session_id": "{session_id}", "msg_type": "{msg_type}" }}'
-        session = EdgeNetSession.create_from_handshake(raw_json, websocket)
+        session = EdgeNetSession.create_from_handshake(raw_json, ws)
 
         self.assertIsInstance(session, EdgeNetSession)
         self.assertEqual(session.session_id, session_id)
-        self.assertEqual(session.websocket, websocket)
+        self.assertEqual(session.websocket, ws)
         self.assertEqual(session.status, SESSION_CONNECTED)
 
 

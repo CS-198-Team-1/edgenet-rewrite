@@ -17,7 +17,16 @@ class EdgeNetClient:
         self.connection = None
 
     def run(self):
-        asyncio.run(self.perform_handshake())
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(self.perform_handshake())
+        loop.create_task(self.handle_commands())
+
+    def close(self):
+        async def _close_client():
+            await self.connection.close()
+
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(_close_client())
 
     async def perform_handshake(self):
         while True:
@@ -29,8 +38,17 @@ class EdgeNetClient:
                 pass
 
         handshake_message = EdgeNetMessage.create_client_handshake_message(self.session_id)
+        
         await self.send(handshake_message)
-        await self.connection.close()
+
+    async def handle_commands(self):
+        while True:
+            try:
+                msg = await self.connection.recv()
+            except websockets.ConnectionClosedOK:
+                break
+            except websockets.ConnectionClosedError:
+                break
 
     async def send(self, message: EdgeNetMessage):
         await self.connection.send(json.dumps({
