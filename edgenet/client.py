@@ -71,28 +71,7 @@ class EdgeNetClient:
             # If message is a polling command
             if message.msg_type == MSG_COMMAND_POLL:
                 function_call = self.get_function(message.function_name)
-
-                self.job_threads[message.job_id] = []
-
-                def _send_result(result):
-                    result_message = EdgeNetMessage.create_result_message(
-                        self.session_id, message.job_id, result
-                    )
-
-                    loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(loop)
-
-                    loop.run_until_complete(self.send(result_message))
-                    loop.close()
-
-                def send_result(result):
-                    _thread = threading.Thread(target=_send_result, args=[result])
-                    _thread.start()
-                    self.job_threads[message.job_id].append(_thread)
-
-                result = function_call(send_result, *message.args, **message.kwargs)
-                for thread in self.job_threads[message.job_id]:
-                    thread.join()
+                result = function_call(message, *message.args, **message.kwargs)
 
     async def send(self, message: EdgeNetMessage):
         msg_dict = {
@@ -112,6 +91,34 @@ class EdgeNetClient:
         return True
 
     def uses_sender(self, func):
-        def wrapper(*args, **kwargs):
-            return func(self.send, *args, **kwargs)
+        def wrapper(message, *args, **kwargs):
+            # Asyncio caller for sending results
+            def _send_result(result):
+                result_message = EdgeNetMessage.create_result_message(
+                    self.session_id, message.job_id, result
+                )
+
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+
+                loop.run_until_complete(self.send(result_message))
+                loop.close()
+
+            # Thread starter for the caller above, for concurrency
+            def send_result(result):
+                _thread = threading.Thread(target=_send_result, args=[result])
+                _thread.start()
+                self.job_threads[message.job_id].append(_thread)
+
+            # Initialize job thread list
+            self.job_threads[message.job_id] = []
+
+            result = func(send_result, *args, **kwargs)
+
+            # Cleanup for all the job threads
+            for thread in self.job_threads[message.job_id]:
+                thread.join()
+
+            return result
+
         return wrapper

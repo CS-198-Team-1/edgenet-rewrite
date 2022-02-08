@@ -110,14 +110,17 @@ class TestNetwork(unittest.TestCase):
         """
         Tests asynchronous polling commands called to client
         """
-        function_name = "poll_five_times"
-        def poll_five_times(send_result):
-            for i in range(5):
-                time.sleep(0.5)
-                send_result(i)
-
         client = EdgeNetClient(self.server_url)
         client.run()
+
+        function_name = "poll_five_times"
+
+        @client.uses_sender
+        def poll_five_times(send_result):
+            for i in range(3):
+                time.sleep(0.1)
+                send_result(i)
+
         client.register_function(function_name, poll_five_times)
 
         self.server.sleep(1)
@@ -126,10 +129,15 @@ class TestNetwork(unittest.TestCase):
             client.session_id, function_name, True
         )
 
-        self.server.sleep(5)
+        self.server.sleep(2)
 
-        for i in range(5):
+        # Check correctness of results
+        for i in range(3):
             self.assertIn(i, job.raw_results)
+
+        # Check if threads have closed
+        for thread in client.job_threads[job.job_id]:
+            self.assertFalse(thread.is_alive())
 
 
 class TestMessage(unittest.TestCase):
