@@ -82,7 +82,7 @@ class TestNetwork(unittest.TestCase):
 
     def test_server_client_command(self):
         """
-        Tests command calling to client
+        Tests command called to client
         """
         function_name = "my_special_sum"
         function_method = lambda a, b : a + (b * 2)
@@ -97,13 +97,39 @@ class TestNetwork(unittest.TestCase):
 
         self.server.sleep(1)
 
-        # asyncio.run(self.server.send_command(client.session_id, function_name, *args, **kwargs))
-
-        job = self.server.send_command_external(client.session_id, function_name, *args, **kwargs)
+        job = self.server.send_command_external(
+            client.session_id, function_name, False,
+            *args, **kwargs
+        )
 
         self.server.sleep(1)
 
         self.assertIn(expected_result, job.raw_results)
+
+    def test_server_client_command_polling(self):
+        """
+        Tests asynchronous polling commands called to client
+        """
+        function_name = "poll_five_times"
+        def poll_five_times(send_result):
+            for i in range(5):
+                time.sleep(0.5)
+                send_result(i)
+
+        client = EdgeNetClient(self.server_url)
+        client.run()
+        client.register_function(function_name, poll_five_times)
+
+        self.server.sleep(1)
+
+        job = self.server.send_command_external(
+            client.session_id, function_name, True
+        )
+
+        self.server.sleep(5)
+
+        for i in range(5):
+            self.assertIn(i, job.raw_results)
 
 
 class TestMessage(unittest.TestCase):

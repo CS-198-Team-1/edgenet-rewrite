@@ -4,6 +4,7 @@ from .session import EdgeNetSession
 from .message import EdgeNetMessage
 from .job import EdgeNetJob, EdgeNetJobResult
 from .constants import *
+from edgenet import session
 
 
 class EdgeNetServer:
@@ -21,9 +22,11 @@ class EdgeNetServer:
         asyncio.set_event_loop(loop)
         loop.run_until_complete(self.serve())
 
-    def send_command_external(self, *args, **kwargs):
+    def send_command_external(self, session_id, function_name, is_polling, *args, **kwargs):
         loop = asyncio.get_event_loop()
-        return loop.run_until_complete(self.send_command(*args, **kwargs))
+        return loop.run_until_complete(self.send_command(
+            session_id, function_name, is_polling, *args, **kwargs
+        ))
 
     async def serve(self, stop=asyncio.Future()):
         # Main server loop
@@ -55,13 +58,13 @@ class EdgeNetServer:
 
         await self.sessions[session_id].websocket.send(json.dumps(msg_dict))
 
-    async def send_command(self, session_id, function_name, *args, **kwargs):
+    async def send_command(self, session_id, function_name, is_polling=False, *args, **kwargs):
         # Initialize a job object
         job = EdgeNetJob(str(uuid.uuid4()), function_name, args, kwargs)
         self.jobs[job.job_id] = job
 
         # Create the command message and send it
-        command_message = job.create_command_message(session_id)
+        command_message = job.create_command_message(session_id, is_polling=is_polling)
         await self.send_message(session_id, command_message)
 
         # Return the job object

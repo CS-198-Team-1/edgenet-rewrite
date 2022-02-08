@@ -20,9 +20,9 @@ class EdgeNetJob:
     def raw_results(self):
         return [r.result for r in self.results]
 
-    def create_command_message(self, target):
+    def create_command_message(self, target, is_polling):
         return EdgeNetMessage(
-            target, MSG_COMMAND,
+            target, MSG_COMMAND_POLL if is_polling else MSG_COMMAND,
             job_id        = self.job_id,
             function_name = self.function_name,
             args          = self.args,

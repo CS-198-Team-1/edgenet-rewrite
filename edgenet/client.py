@@ -1,7 +1,8 @@
+import threading
 import uuid, asyncio, json
 import websockets
 
-from edgenet.constants import MSG_COMMAND
+from edgenet.constants import MSG_COMMAND, MSG_COMMAND_POLL
 from .message import EdgeNetMessage
 
 
@@ -17,6 +18,9 @@ class EdgeNetClient:
 
         # Connection is initially null
         self.connection = None
+
+        # Collection of open threads to be cleaned up
+        self.job_threads = {}
 
     def run(self):
         loop = asyncio.get_event_loop()
@@ -63,6 +67,32 @@ class EdgeNetClient:
                     self.session_id, message.job_id, result
                 )
                 await self.send(result_message)
+            
+            # If message is a polling command
+            if message.msg_type == MSG_COMMAND_POLL:
+                function_call = self.get_function(message.function_name)
+
+                self.job_threads[message.job_id] = []
+
+                def _send_result(result):
+                    result_message = EdgeNetMessage.create_result_message(
+                        self.session_id, message.job_id, result
+                    )
+
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+
+                    loop.run_until_complete(self.send(result_message))
+                    loop.close()
+
+                def send_result(result):
+                    _thread = threading.Thread(target=_send_result, args=[result])
+                    _thread.start()
+                    self.job_threads[message.job_id].append(_thread)
+
+                result = function_call(send_result, *message.args, **message.kwargs)
+                for thread in self.job_threads[message.job_id]:
+                    thread.join()
 
     async def send(self, message: EdgeNetMessage):
         msg_dict = {
@@ -80,3 +110,8 @@ class EdgeNetClient:
     def register_function(self, function_name, function_method):
         setattr(self, function_name, function_method)
         return True
+
+    def uses_sender(self, func):
+        def wrapper(*args, **kwargs):
+            return func(self.send, *args, **kwargs)
+        return wrapper
