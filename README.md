@@ -43,17 +43,17 @@ To run sample pipelines locally, run two terminals (or if running practically, t
 
 (`.cloud`) On the cloud/server (make sure you run this locally, or in a machine with a public IP properly set in `config.py`):
 ```
-python3 -m pipelines.experiment.cloud
+python3 -m pipelines.experiments.edge_only.cloud
 ```
 
 (`.edge`)On the edge:
 ```
-python3 -m pipelines.experiment.edge
+python3 -m pipelines.experiments.edge_only.edge
 ```
 
 A grace period of five seconds is given once the cloud script is run to allow for the edge to connect. You could also run the edge script first, as it will try to connect to the cloud as soon as it's up.
 
 #### Available pipelines:
-- **`pipelines.experiment.edge_only`: The main LPR experiment scripts for edge-only processing.**
+- **`pipelines.experiments.edge_only`: The main LPR experiment scripts for edge-only processing.**
 - `pipelines.examples.simple`: The cloud calls a simple "add three numbers" function to the edge.
 
