@@ -1,6 +1,6 @@
 EDGE_ONLY_FUNCTION_NAME = "edge_only_capture_video"
 
-EXPERIMENT_VIDEO_PATH = "experiment-files/test_video_3.mp4"
+EXPERIMENT_VIDEO_PATH = "experiment-files/test_video_4.mp4"
 VIDEO_WIDTH  = 1920
 VIDEO_HEIGHT = 1080
 VIDEO_FPS    = 30
