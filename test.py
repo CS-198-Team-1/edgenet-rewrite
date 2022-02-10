@@ -3,10 +3,12 @@ import tests
 
 
 def suite():
-    suite = unittest.TestLoader().loadTestsFromModule(tests.edgenet)
-    suite = unittest.TestLoader().loadTestsFromModule(tests.gpx)
+    _edgenet = unittest.TestLoader().loadTestsFromModule(tests.edgenet)
+    _gpx = unittest.TestLoader().loadTestsFromModule(tests.gpx)
     
-    return unittest.TestSuite([suite])
+    return unittest.TestSuite([
+        _edgenet, _gpx
+    ])
 
 
 if __name__ == "__main__":

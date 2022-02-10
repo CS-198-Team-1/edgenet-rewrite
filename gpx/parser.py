@@ -1,6 +1,20 @@
-import time, datetime
+import datetime
 import gpxpy
 from .wrappers import GPXCollection, GPXEntry
+
+
+def parse_gpx_and_sync_now(gpx_file_path):
+    gpx_collection = parse_gpx(gpx_file_path)
+    
+    # Get first entry and get its offset to current time
+    first_entry = gpx_collection.entries[0]
+    time_now = datetime.datetime.now().replace(microsecond=0)
+    delta = (time_now - first_entry.dttm)
+
+    for entry in gpx_collection.entries:
+        entry.dttm += delta
+
+    return gpx_collection
 
 
 def parse_gpx(gpx_file_path):
@@ -18,7 +32,8 @@ def parse_gpx(gpx_file_path):
     for segment in gpx_file_obj.tracks[0].segments:
         for point in segment.points:
             new_entry = GPXEntry(
-                point.time, point.latitude, point.longitude,
+                point.time.replace(tzinfo=None), 
+                point.latitude, point.longitude,
                 ele=point.elevation, speed=point.speed
             )
             gpx_collection.entries.append(new_entry)

@@ -1,6 +1,8 @@
 import unittest
+import datetime
+from freezegun import freeze_time
+from unittest.mock import patch
 from dateutil import parser as dttm_parser
-from datetime import datetime
 from gpx import parser
 from gpx.wrappers import GPXCollection, GPXEntry
 
@@ -19,7 +21,7 @@ class TestGPX(unittest.TestCase):
             9: "2020-09-24T04:09:34Z",
         }
         
-        self.dttms = { i: dttm_parser.parse(t)
+        self.dttms = { i: dttm_parser.parse(t).replace(tzinfo=None)
             for i, t in dttms.items() }
 
         self.latlngs = {
@@ -35,7 +37,7 @@ class TestGPX(unittest.TestCase):
 
         self.assertIsInstance(gpx_collection, GPXCollection)
         self.assertIsInstance(gpx_collection.entries[0], GPXEntry)
-        self.assertIsInstance(gpx_collection.entries[0].dttm, datetime)
+        self.assertIsInstance(gpx_collection.entries[0].dttm, datetime.datetime)
     
     def test_parse_gpx_correctness(self):
         gpx_collection = parser.parse_gpx(
@@ -55,3 +57,26 @@ class TestGPX(unittest.TestCase):
             entry = gpx_collection.entries[i]
             self.assertEqual(entry.lat, latlng[0])
             self.assertEqual(entry.lng, latlng[1])
+
+    @freeze_time("2022-02-10T00:00:00Z")
+    def test_parse_gpx_and_sync_now(self):
+        gpx_collection = parser.parse_gpx_and_sync_now(
+            self.gpx_file_path
+        )
+
+        # Initialize start time
+        mocked_start_time = "2022-02-10T00:00:00Z"
+
+        # Mock datetime object 
+        with patch("datetime.datetime") as mocked_dttm:
+            mocked_dttm.now.return_value = dttm_parser.parse(mocked_start_time)
+
+        # Generate correct timestamps
+        synced_dttms = { i: f"2022-02-10T00:00:0{i}Z" for i in range(10) }
+        synced_dttms = { i: dttm_parser.parse(t).replace(tzinfo=None)
+            for i, t in synced_dttms.items() }
+
+        # Assert if all dttms are correct:
+        for i, dttm in synced_dttms.items():
+            entry = gpx_collection.entries[i]
+            self.assertEqual(entry.dttm, dttm)
