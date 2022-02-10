@@ -1,6 +1,4 @@
 # Connection settings
-SERVER_HOSTNAME     = "202.92.129.205"
-SERVER_PORT         = 8765
 SERVER_PING_TIMEOUT = None
 
 # Session constants

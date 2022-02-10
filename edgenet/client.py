@@ -26,6 +26,7 @@ class EdgeNetClient:
         loop = asyncio.get_event_loop()
         loop.run_until_complete(self.perform_handshake())
         loop.create_task(self.handle_commands())
+        loop.run_forever()
 
     def close(self):
         async def _close_client():
