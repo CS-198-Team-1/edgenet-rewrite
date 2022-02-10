@@ -3,7 +3,7 @@ import datetime
 from freezegun import freeze_time
 from unittest.mock import patch
 from dateutil import parser as dttm_parser
-from gpx import parser
+from gpx import parser, uses_gpx
 from gpx.wrappers import GPXCollection, GPXEntry, GPXException
 
 
@@ -137,3 +137,33 @@ class TestGPX(unittest.TestCase):
         self.assertRaises(
             GPXException, gpx_collection.get_latest_entry, test_time
         )
+
+    @freeze_time("2022-02-10T00:00:00Z")
+    def test_uses_gpx_decorator(self):
+
+        first_five = [f"2022-02-10T00:00:0{i}Z" for i in range(5)]
+
+        # Define a function that uses the decorator
+        @uses_gpx(self.gpx_file_path)
+        def get_first_five_seconds_dttm(gpxc):
+            result = []
+            for f in first_five:
+                r = gpxc.get_latest_entry(
+                    dttm_parser.parse(f).replace(tzinfo=None)
+                )
+                result.append(r.latlng)
+            return result
+
+        first_five_latlng = [
+            (14.6490481666667, 121.068924666667),
+            (14.6490481666667, 121.068924666667),
+            (14.6490636666667, 121.068915166667),
+            (14.6491121666667, 121.068903833333),
+            (14.649171, 121.068884666667)
+        ]
+
+        result = get_first_five_seconds_dttm()
+
+        # Check if results are correct
+        for i, latlng in enumerate(first_five_latlng):
+            self.assertEqual(result[i], latlng)
