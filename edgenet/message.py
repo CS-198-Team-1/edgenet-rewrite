@@ -32,5 +32,11 @@ class EdgeNetMessage:
             session_id, MSG_RESULT,
             job_id=job_id,
             result=result,
-            sent_dttm=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            sent_dttm=datetime.now().isoformat()
+        )
+
+    @classmethod
+    def create_job_finished_message(cls, session_id, job_id):
+        return cls(
+            session_id, MSG_FINISH, job_id=job_id, 
         )

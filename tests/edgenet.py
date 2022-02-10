@@ -105,6 +105,33 @@ class TestNetwork(unittest.TestCase):
 
         self.assertIn(expected_result, job.raw_results)
 
+    def test_server_client_command_finishes(self):
+        """
+        Tests if awaiting command finishes
+        """
+        function_name = "my_special_sum"
+        function_method = lambda a, b : a + (b * 2)
+
+        args = [10, 200]
+        kwargs = {}
+        expected_result = function_method(*args, **kwargs)
+
+        client = EdgeNetClient(self.server_url)
+        client.run(run_forever=False)
+        client.register_function(function_name, function_method)
+
+        self.server.sleep(0.1)
+
+        job = self.server.send_command_external(
+            client.session_id, function_name, is_polling=False,
+            *args, **kwargs
+        )
+
+        self.server.sleep(0.1)
+
+        self.assertIn(expected_result, job.raw_results)
+        job.wait_until_finished() # This will not terminate if fails!
+
     def test_server_client_command_polling(self):
         """
         Tests asynchronous polling commands called to client
@@ -137,6 +164,41 @@ class TestNetwork(unittest.TestCase):
         # Check if threads have closed
         for thread in client.job_threads[job.job_id]:
             self.assertFalse(thread.is_alive())
+
+    def test_server_client_command_polling_finishes(self):
+        """
+        Tests asynchronous polling commands called to client
+        """
+        client = EdgeNetClient(self.server_url)
+        client.run(run_forever=False)
+
+        function_name = "poll_five_times"
+
+        @client.uses_sender
+        def poll_five_times(send_result):
+            for i in range(3):
+                time.sleep(0.1)
+                send_result(i)
+
+        client.register_function(function_name, poll_five_times)
+
+        self.server.sleep(0.1)
+
+        job = self.server.send_command_external(
+            client.session_id, function_name, is_polling=True
+        )
+
+        self.server.sleep(0.5)
+
+        # Check correctness of results
+        for i in range(3):
+            self.assertIn(i, job.raw_results)
+
+        # Check if threads have closed
+        for thread in client.job_threads[job.job_id]:
+            self.assertFalse(thread.is_alive())
+            
+        job.wait_until_finished()
 
     def test_server_client_command_polling_with_args_kwargs(self):
         """

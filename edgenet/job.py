@@ -1,4 +1,4 @@
-
+import asyncio
 from datetime import datetime
 from .constants import *
 from .message import EdgeNetMessage
@@ -16,6 +16,9 @@ class EdgeNetJob:
         self.callback      = callback
 
         self.results = []
+
+        # Spin lock for finishing a job
+        self.finished = False
 
         # Some validation:
         if not callable(callback) and callback is not None:
@@ -39,7 +42,7 @@ class EdgeNetJob:
             message.session_id,
             message.result,
             message.sent_dttm,
-            datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            datetime.now().isoformat()
         )
 
         # Append to own results list 
@@ -48,6 +51,12 @@ class EdgeNetJob:
         # If callback exists:
         if self.callback:
             self.callback(new_result)
+
+    def finish_job(self):
+        self.finished = True
+
+    def wait_until_finished(self):
+        while not self.finished: pass
 
 
 class EdgeNetJobResult:

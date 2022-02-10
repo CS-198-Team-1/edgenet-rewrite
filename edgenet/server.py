@@ -51,8 +51,13 @@ class EdgeNetServer:
                 session = EdgeNetSession.create_from_handshake(msg, websocket)
                 self.sessions[message.session_id] = session
 
+            # If message is a job result
             if message.msg_type == MSG_RESULT:
                 self.jobs[message.job_id].register_result_from_message(message)
+
+            # If message indicates that a job is finished
+            if message.msg_type == MSG_FINISH:
+                self.jobs[message.job_id].finish_job()
 
     async def send_message(self, session_id, message: EdgeNetMessage):
         msg_dict = {

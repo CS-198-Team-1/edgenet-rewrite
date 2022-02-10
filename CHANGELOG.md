@@ -4,7 +4,17 @@ All notable changes to this project will be documented in this file.
  
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
- 
+
+## [1.2.0] - 2021-02-11
+
+### Added
+- New `callback` keyword argument for `EdgeNetServer.send_command` and `EdgeNetServer.send_command_external` that is called when a job result is received. The `EdgeNetJobResult` object associated with the result is passed to the function.
+- Full edge-only implementation of the LPR pipeline is now at `pipelines.experiment`.
+- New function `EdgeNetJob.wait_until_finished` that will wait until a `MSG_FINISH` is received for the current job using a spin lock that checks a new attribute `EdgeNetJob.finished`.
+### Changed
+- `is_polling` argument for `EdgeNetServer.send_command` and `EdgeNetServer.send_command_external` is now passable only as a *keyword*.
+- `sent_dttm` and `recv_dttm` for `EdgeNetJobResult` should now be all in ISO format.
+
 ## [1.1.0] - 2021-02-10
 ### Added
 - Initial edge/client and cloud/server modules

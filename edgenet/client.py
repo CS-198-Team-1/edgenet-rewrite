@@ -69,11 +69,13 @@ class EdgeNetClient:
                     self.session_id, message.job_id, result
                 )
                 await self.send(result_message)
+                await self.send_job_finished(message.job_id)
             
             # If message is a polling command
             if message.msg_type == MSG_COMMAND_POLL:
                 function_call = self.get_function(message.function_name)
                 result = function_call(message, *message.args, **message.kwargs)
+                await self.send_job_finished(message.job_id)
 
     async def send(self, message: EdgeNetMessage):
         msg_dict = {
@@ -84,6 +86,11 @@ class EdgeNetClient:
             msg_dict[e] = getattr(message, e)
 
         await self.connection.send(json.dumps(msg_dict))
+
+    async def send_job_finished(self, job_id):
+        await self.send(EdgeNetMessage.create_job_finished_message(
+            self.session_id, job_id
+        ))
 
     def get_function(self, function_name):
         return getattr(self, function_name)
