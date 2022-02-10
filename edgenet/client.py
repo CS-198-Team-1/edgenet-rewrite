@@ -22,11 +22,12 @@ class EdgeNetClient:
         # Collection of open threads to be cleaned up
         self.job_threads = {}
 
-    def run(self):
+    def run(self, run_forever=True):
         loop = asyncio.get_event_loop()
         loop.run_until_complete(self.perform_handshake())
         loop.create_task(self.handle_commands())
-        loop.run_forever()
+        
+        if run_forever: loop.run_forever()
 
     def close(self):
         async def _close_client():

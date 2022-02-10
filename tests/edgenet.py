@@ -34,7 +34,7 @@ class TestNetwork(unittest.TestCase):
         # Check if session_id is NOT YET in server's sessions dict
         self.assertNotIn(client.session_id, self.server.sessions)
 
-        client.run()
+        client.run(run_forever=False)
         self.server.sleep(0.1)
 
         # Check if session_id is in server's sessions dict
@@ -66,7 +66,7 @@ class TestNetwork(unittest.TestCase):
         # Check if client's connection is still None
         self.assertIsNone(client.connection)
 
-        client.run()
+        client.run(run_forever=False)
 
         # Check if client properly stored the connection
         self.assertIsInstance(
@@ -91,7 +91,7 @@ class TestNetwork(unittest.TestCase):
         expected_result = function_method(*args, **kwargs)
 
         client = EdgeNetClient(self.server_url)
-        client.run()
+        client.run(run_forever=False)
         client.register_function(function_name, function_method)
 
         self.server.sleep(0.1)
@@ -110,7 +110,7 @@ class TestNetwork(unittest.TestCase):
         Tests asynchronous polling commands called to client
         """
         client = EdgeNetClient(self.server_url)
-        client.run()
+        client.run(run_forever=False)
 
         function_name = "poll_five_times"
 
@@ -143,7 +143,7 @@ class TestNetwork(unittest.TestCase):
         Tests asynchronous polling commands called to client (with args and kwargs)
         """
         client = EdgeNetClient(self.server_url)
-        client.run()
+        client.run(run_forever=False)
 
         function_name = "poll_five_times"
 
@@ -184,9 +184,9 @@ class TestNetwork(unittest.TestCase):
         Tests asynchronous polling commands called to client (with args and kwargs)
         """
         client_1 = EdgeNetClient(self.server_url)
-        client_1.run()
+        client_1.run(run_forever=False)
         client_2 = EdgeNetClient(self.server_url)
-        client_2.run()
+        client_2.run(run_forever=False)
 
         function_name = "poll_five_times"
 
