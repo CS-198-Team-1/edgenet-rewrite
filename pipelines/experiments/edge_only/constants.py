@@ -8,6 +8,7 @@ CAPTURE_FPS  = 15
 
 BASE_CONFIDENCE = 0.3
 
+RECOG_MODEL_PATH = "tensorflow/recog_model.tflite"
 MODEL_PATH = "tensorflow/detect4ph.tflite"
 GPX_PATH = "experiment-files/exp_1.gpx"
 
