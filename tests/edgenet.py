@@ -1,4 +1,4 @@
-import unittest, threading, time, asyncio
+import unittest, threading, time
 from unittest.mock import patch
 import websockets
 from edgenet.client import EdgeNetClient

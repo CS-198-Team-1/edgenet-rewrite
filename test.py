@@ -1,10 +1,10 @@
 import unittest
 import tests
-import unittest
 
 
 def suite():
     suite = unittest.TestLoader().loadTestsFromModule(tests.edgenet)
+    suite = unittest.TestLoader().loadTestsFromModule(tests.gpx)
     
     return unittest.TestSuite([suite])
 

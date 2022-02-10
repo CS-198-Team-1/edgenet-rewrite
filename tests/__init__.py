@@ -1,1 +1,1 @@
-from . import edgenet
+from . import edgenet, gpx

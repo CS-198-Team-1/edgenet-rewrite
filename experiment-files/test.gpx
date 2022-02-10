@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<gpx version="1.0"
+ creator="ExifTool 12.06"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xmlns="http://www.topografix.com/GPX/1/0"
+ xsi:schemaLocation="http://www.topografix.com/GPX/1/0 http://www.topografix.com/GPX/1/0/gpx.xsd">
+<trk>
+<number>1</number>
+<trkseg>
+<trkpt lat="14.6490481666667" lon="121.068924666667">
+  <ele>63.9</ele>
+  <time>2020-09-24T04:09:25Z</time>
+  <speed>0</speed>
+</trkpt>
+<trkpt lat="14.6490481666667" lon="121.068924666667">
+  <ele>63.9</ele>
+  <time>2020-09-24T04:09:26Z</time>
+  <speed>0</speed>
+</trkpt>
+<trkpt lat="14.6490636666667" lon="121.068915166667">
+  <ele>63.3</ele>
+  <time>2020-09-24T04:09:27Z</time>
+  <speed>14.665988275528</speed>
+</trkpt>
+<trkpt lat="14.6491121666667" lon="121.068903833333">
+  <ele>62.1</ele>
+  <time>2020-09-24T04:09:28Z</time>
+  <speed>19.7552836608887</speed>
+</trkpt>
+<trkpt lat="14.649171" lon="121.068884666667">
+  <ele>61</ele>
+  <time>2020-09-24T04:09:29Z</time>
+  <speed>24.7519795761108</speed>
+</trkpt>
+<trkpt lat="14.6492368333333" lon="121.068857166667">
+  <ele>59.9</ele>
+  <time>2020-09-24T04:09:30Z</time>
+  <speed>27.9929795761108</speed>
+</trkpt>
+<trkpt lat="14.6493096666667" lon="121.0688295">
+  <ele>58.7</ele>
+  <time>2020-09-24T04:09:31Z</time>
+  <speed>30.4839183044434</speed>
+</trkpt>
+<trkpt lat="14.6493833333333" lon="121.068794833333">
+  <ele>58</ele>
+  <time>2020-09-24T04:09:32Z</time>
+  <speed>31.5765985870361</speed>
+</trkpt>
+<trkpt lat="14.6494611666667" lon="121.068762">
+  <ele>57.5</ele>
+  <time>2020-09-24T04:09:33Z</time>
+  <speed>32.4562992935181</speed>
+</trkpt>
+<trkpt lat="14.6495368333333" lon="121.068730833333">
+  <ele>57.5</ele>
+  <time>2020-09-24T04:09:34Z</time>
+  <speed>31.2154591522217</speed>
+</trkpt>
+
+</trkseg>
+</trk>
+</gpx>
