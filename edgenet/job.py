@@ -8,13 +8,18 @@ class EdgeNetJob:
     """
     A wrapper for a job that is executed through EdgeNetServer.send_command
     """
-    def __init__(self, job_id, function_name, args=[], kwargs={}):
+    def __init__(self, job_id, function_name, args=[], kwargs={}, callback=None):
         self.job_id        = job_id
         self.function_name = function_name
         self.args          = args
         self.kwargs        = kwargs
+        self.callback      = callback
 
         self.results = []
+
+        # Some validation:
+        if not callable(callback) and callback is not None:
+            raise EdgeNetJobException("Provided callback is not callable.")
     
     @property
     def raw_results(self):
@@ -36,7 +41,13 @@ class EdgeNetJob:
             message.sent_dttm,
             datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         )
+
+        # Append to own results list 
         self.results.append(new_result)
+
+        # If callback exists:
+        if self.callback:
+            self.callback(new_result)
 
 
 class EdgeNetJobResult:
@@ -48,3 +59,7 @@ class EdgeNetJobResult:
         self.result     = result
         self.sent_dttm  = sent_dttm
         self.recv_dttm  = recv_dttm
+
+
+class EdgeNetJobException(Exception):
+    pass

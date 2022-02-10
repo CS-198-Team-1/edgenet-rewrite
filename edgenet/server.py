@@ -70,7 +70,10 @@ class EdgeNetServer:
         **kwargs
         ):
         # Initialize a job object
-        job = EdgeNetJob(str(uuid.uuid4()), function_name, args, kwargs)
+        job = EdgeNetJob(
+            str(uuid.uuid4()), function_name, args=args, kwargs=kwargs,
+            callback=callback
+        )
         self.jobs[job.job_id] = job
 
         # Create the command message and send it

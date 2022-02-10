@@ -1,5 +1,5 @@
 import unittest, threading, time
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, Mock, call
 import websockets
 from edgenet.client import EdgeNetClient
 from edgenet.server import EdgeNetServer
@@ -254,7 +254,7 @@ class TestNetwork(unittest.TestCase):
 
         self.server.sleep(0.1)
 
-        callback = MagicMock()
+        callback = Mock()
 
         job = self.server.send_command_external(
             client.session_id, function_name, is_polling=False,
@@ -287,7 +287,7 @@ class TestNetwork(unittest.TestCase):
 
         self.server.sleep(0.1)
 
-        callback = MagicMock()
+        callback = Mock()
 
         job = self.server.send_command_external(
             client.session_id, function_name, is_polling=True,
@@ -305,8 +305,9 @@ class TestNetwork(unittest.TestCase):
             self.assertFalse(thread.is_alive())
 
         # Check if callback is called with all results:
-        for result in job.results:
-            callback.assert_called_with(result)
+        callback.assert_has_calls(
+            [call(result) for result in job.results]
+        )
 
 
 class TestMessage(unittest.TestCase):
