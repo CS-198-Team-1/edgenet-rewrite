@@ -22,8 +22,9 @@ for i in range(10):
     a, b, c = i, i*3, i+23
     print(f"Sending three numbers: {a}, {b}, {c}")
     job = server.send_command_external(
-        session_id, EDGE_ONLY_FUNCTION_NAME, False,
-        a, b, c
+        session_id, EDGE_ONLY_FUNCTION_NAME, 
+        a, b, c,
+        is_polling=False,
     )
     server.sleep(0.5)
     expected_result = add_three_numbers(a, b, c)

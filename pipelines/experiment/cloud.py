@@ -19,6 +19,6 @@ session_id = [*server.sessions][0]
 
 # Send command to start capturing the video:
 job = server.send_command_external(
-    session_id, EDGE_ONLY_FUNCTION_NAME, True,
-    
+    session_id, EDGE_ONLY_FUNCTION_NAME, 
+    is_polling=True,
 )
