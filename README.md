@@ -3,7 +3,7 @@
 EdgeNet **(working title)** is an implementation of an edge computing pipeline built using Python.
 
 ## Installation
-
+### Dependencies
 Ensure that you are running **Python 3.8.10**.
 
 Set up and activate the `virtualenv` scripts as per [your operating system's instructions.](https://docs.python.org/3/tutorial/venv.html#creating-virtual-environments)
@@ -18,10 +18,10 @@ Then, install the dependencies through `pip`:
 ```
 pip3 install -r requirements.txt
 ```
-
-## Usage
 ### Setting up `config.py`
 You need to create your own `config.py` before starting the application. An example is included in `config-local.py`.
+
+## Usage
 
 ### Testing
 Before running the application,run the automated tests to ensure that everything is working:
