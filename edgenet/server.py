@@ -22,10 +22,16 @@ class EdgeNetServer:
         asyncio.set_event_loop(loop)
         loop.run_until_complete(self.serve())
 
-    def send_command_external(self, session_id, function_name, is_polling, *args, **kwargs):
+    def send_command_external(
+        self, session_id, function_name, *args, 
+        is_polling=False, callback=None,
+        **kwargs
+    ):
         loop = asyncio.get_event_loop()
         return loop.run_until_complete(self.send_command(
-            session_id, function_name, is_polling, *args, **kwargs
+            session_id, function_name, is_polling=is_polling,
+            callback=callback,
+            *args, **kwargs
         ))
 
     async def serve(self, stop=asyncio.Future()):
@@ -58,7 +64,11 @@ class EdgeNetServer:
 
         await self.sessions[session_id].websocket.send(json.dumps(msg_dict))
 
-    async def send_command(self, session_id, function_name, is_polling=False, *args, **kwargs):
+    async def send_command(
+        self, session_id, function_name, *args, 
+        is_polling=False, callback=None,
+        **kwargs
+        ):
         # Initialize a job object
         job = EdgeNetJob(str(uuid.uuid4()), function_name, args, kwargs)
         self.jobs[job.job_id] = job

@@ -1,5 +1,5 @@
 import unittest, threading, time
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 import websockets
 from edgenet.client import EdgeNetClient
 from edgenet.server import EdgeNetServer
@@ -97,7 +97,7 @@ class TestNetwork(unittest.TestCase):
         self.server.sleep(0.1)
 
         job = self.server.send_command_external(
-            client.session_id, function_name, False,
+            client.session_id, function_name, is_polling=False,
             *args, **kwargs
         )
 
@@ -125,7 +125,7 @@ class TestNetwork(unittest.TestCase):
         self.server.sleep(0.1)
 
         job = self.server.send_command_external(
-            client.session_id, function_name, True
+            client.session_id, function_name, is_polling=True
         )
 
         self.server.sleep(0.5)
@@ -165,7 +165,7 @@ class TestNetwork(unittest.TestCase):
         self.server.sleep(0.1)
 
         job = self.server.send_command_external(
-            client.session_id, function_name, True,
+            client.session_id, function_name, is_polling=True,
             *args, **kwargs
         )
 
@@ -213,12 +213,12 @@ class TestNetwork(unittest.TestCase):
         self.server.sleep(0.1)
 
         job_1 = self.server.send_command_external(
-            client_1.session_id, function_name, True,
+            client_1.session_id, function_name, is_polling=True,
             *args_1, **kwargs_1
         )
 
         job_2 = self.server.send_command_external(
-            client_2.session_id, function_name, True,
+            client_2.session_id, function_name, is_polling=True,
             *args_2, **kwargs_2
         )
 
@@ -235,6 +235,78 @@ class TestNetwork(unittest.TestCase):
             self.assertFalse(thread.is_alive())
         for thread in client_2.job_threads[job_2.job_id]:
             self.assertFalse(thread.is_alive())
+
+    def test_server_client_command_callback(self):
+        """
+        Tests callback function called when result is received
+        """
+
+        function_name = "my_special_sum"
+        function_method = lambda a, b : a + (b * 2)
+
+        args = [10, 200]
+        kwargs = {}
+        expected_result = function_method(*args, **kwargs)
+
+        client = EdgeNetClient(self.server_url)
+        client.run(run_forever=False)
+        client.register_function(function_name, function_method)
+
+        self.server.sleep(0.1)
+
+        callback = MagicMock()
+
+        job = self.server.send_command_external(
+            client.session_id, function_name, is_polling=False,
+            callback=callback,
+            *args, **kwargs
+        )
+
+        self.server.sleep(0.1)
+
+        # Check if callback is called with the result
+        callback.assert_called_with(job.results[0])
+
+
+    def test_server_client_command_polling_callback(self):
+        """
+        Tests asynchronous polling commands called to client
+        """
+        client = EdgeNetClient(self.server_url)
+        client.run(run_forever=False)
+
+        function_name = "poll_five_times"
+
+        @client.uses_sender
+        def poll_five_times(send_result):
+            for i in range(3):
+                time.sleep(0.1)
+                send_result(i)
+
+        client.register_function(function_name, poll_five_times)
+
+        self.server.sleep(0.1)
+
+        callback = MagicMock()
+
+        job = self.server.send_command_external(
+            client.session_id, function_name, is_polling=True,
+            callback=callback
+        )
+
+        self.server.sleep(0.5)
+
+        # Check correctness of results
+        for i in range(3):
+            self.assertIn(i, job.raw_results)
+
+        # Check if threads have closed
+        for thread in client.job_threads[job.job_id]:
+            self.assertFalse(thread.is_alive())
+
+        # Check if callback is called with all results:
+        for result in job.results:
+            callback.assert_called_with(result)
 
 
 class TestMessage(unittest.TestCase):
