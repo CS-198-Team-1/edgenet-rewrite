@@ -10,7 +10,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - New `callback` keyword argument for `EdgeNetServer.send_command` and `EdgeNetServer.send_command_external` that is called when a job result is received. The `EdgeNetJobResult` object associated with the result is passed to the function.
 - Full edge-only implementation of the LPR pipeline is now at `pipelines.experiments.edge_only`.
 - New function `EdgeNetJob.wait_until_finished` that will wait until a `MSG_FINISH` is received for the current job using a spin lock that checks a new attribute `EdgeNetJob.finished`.
-- New `Timer` classes can now record times taken to execute specific code blocks.
+- New `Timer` and `TimerSection` classes can now record times taken to execute specific code blocks.
+- New `Experiment` class can process `Job` and associated `Timer` metrics to record to a CSV file.
 - `EdgeNetJob` now has a `.metrics` attribute that stores said `Timer` object.
 - `EdgeNetJob` now has a `.wait_for_metrics` function that will wait until the `.metrics` attribute is not `None`, using a spin lock.
 ### Changed

@@ -2,6 +2,10 @@ import threading
 from edgenet.server import EdgeNetServer
 from config import *
 from .functions import *
+from metrics.experiment import Experiment
+
+# Initialize experiment
+experiment = Experiment("legacy.edge_only")
 
 # Initialize server
 server = EdgeNetServer(SERVER_HOSTNAME, SERVER_PORT)
@@ -23,13 +27,21 @@ def callback(job_result):
     logging.info(f"Received plate {result['plate']} at {result['lat']}, {result['lng']}! Detected at {job_result.sent_dttm} and received at {job_result.recv_dttm}")
 
 logging.info("Running edge-only execution...")
+
 # Send command to start capturing the video:
 job = server.send_command_external(
     session_id, EDGE_ONLY_FUNCTION_NAME,
     EXPERIMENT_VIDEO_PATH,
     is_polling=True, callback=callback
 )
+# Append job to experiment container
+experiment.jobs.append(job)
 
 # Wait until job is finished, then terminate
 # If this is not included, script will terminate immediately!
 job.wait_until_finished()
+job.wait_for_metrics()
+
+# Record results
+experiment.end_experiment()
+experiment.to_csv()

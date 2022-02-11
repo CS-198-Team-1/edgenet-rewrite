@@ -103,6 +103,7 @@ def capture_video(gpxc, timer, sender, video_path, frames_per_second=15, target=
     logging.info("OpenCV capture released.")
 
     timer.end_function() # Record end of whole function
+    sender.send_metrics(timer) # Send metrics to cloud
 
 
 def execute_text_recognition(sender, gpxc, boxes, frame, confidence, time_captured):
