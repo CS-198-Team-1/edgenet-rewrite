@@ -1,7 +1,7 @@
 import uuid, asyncio, json, threading
 import websockets
 
-from edgenet.constants import MSG_COMMAND, MSG_COMMAND_POLL
+from edgenet.constants import INITIAL_BACKOFF_TIME_IN_SECONDS, MAX_BACKOFF_TIME_IN_SECONDS, MSG_COMMAND, MSG_COMMAND_POLL
 from .message import EdgeNetMessage
 from config import *
 
@@ -21,7 +21,7 @@ class EdgeNetClient:
         # Collection of open threads to be cleaned up
         self.job_threads = {}
         
-        logging.debug(f"EdgeNetClient for host {server_url} instantiated with session ID {self.session_id[-12:]}")
+        logging.info(f"EdgeNetClient for host {server_url} instantiated with session ID {self.session_id[-12:]}")
 
     def run(self, run_forever=True):
         loop = asyncio.get_event_loop()
@@ -38,19 +38,22 @@ class EdgeNetClient:
         loop.run_until_complete(_close_client())
 
     async def perform_handshake(self):
-        logging.debug(f"Attempting to connect to server...")
+        backoff_time = INITIAL_BACKOFF_TIME_IN_SECONDS
         while True:
             try:
                 self.connection = await websockets.connect(self.server_url)
                 break
             except ConnectionRefusedError:
-                # TODO: Implement exponential backoff for reconnecting
                 pass
+            # Exponential backoff
+            logging.info(f"Failed to connect to server, trying again in {backoff_time} seconds.")
+            await asyncio.sleep(backoff_time)
+            backoff_time = min( 2*backoff_time, MAX_BACKOFF_TIME_IN_SECONDS )
 
         handshake_message = EdgeNetMessage.create_client_handshake_message(self.session_id)
         
         await self.send(handshake_message)
-        logging.debug(f"Connection successful!")
+        logging.info(f"Connection to server established.")
 
     async def handle_commands(self):
         while True:
