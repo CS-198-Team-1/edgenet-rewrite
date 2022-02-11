@@ -6,9 +6,8 @@ EdgeNet **(working title)** is an implementation of an edge computing pipeline b
 ### Dependencies
 Ensure that you are running **Python 3.8.10**.
 
-Set up and activate the `virtualenv` scripts as per [your operating system's instructions.](https://docs.python.org/3/tutorial/venv.html#creating-virtual-environments)
+Set up and activate the `virtualenv` scripts as per [your operating system's instructions.](https://docs.python.org/3/tutorial/venv.html#creating-virtual-environments) However, this package is **tested only on Linux and on Windows WSL 2 (Ubuntu 20.04 LTS)**.
 
-For Linux:
 ```bash
 python3 -m venv venv
 source venv/bin/activate
@@ -18,6 +17,13 @@ Then, install the dependencies through `pip`:
 ```
 pip3 install -r requirements.txt
 ```
+
+### Binaries
+Ensure that the binaries in `bin/` are executable (so that you don't need to `sudo` the Python scripts):
+```bash
+sudo chmod -R 777 bin/
+```
+
 ### Setting up `config.py`
 You need to create your own `config.py` before starting the application. An example is included in `config-local.py`.
 

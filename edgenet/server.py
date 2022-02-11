@@ -31,11 +31,13 @@ class EdgeNetServer:
         **kwargs
     ):
         loop = asyncio.get_event_loop()
-        return loop.run_until_complete(self.send_command(
+        result = loop.run_until_complete(self.send_command(
             session_id, function_name, is_polling=is_polling,
             callback=callback,
             *args, **kwargs
         ))
+
+        return result
 
     async def serve(self, stop=asyncio.Future()):
         # Main server loop
