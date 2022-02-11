@@ -6,6 +6,7 @@ from edgenet.server import EdgeNetServer
 from edgenet.session import EdgeNetSession
 from edgenet.message import EdgeNetMessage
 from edgenet.constants import *
+from metrics.time import uses_timer, Timer, TimerSection
 
 
 class TestNetwork(unittest.TestCase):
@@ -142,10 +143,10 @@ class TestNetwork(unittest.TestCase):
         function_name = "poll_five_times"
 
         @client.uses_sender
-        def poll_five_times(send_result):
+        def poll_five_times(sender):
             for i in range(3):
                 time.sleep(0.1)
-                send_result(i)
+                sender.send_result(i)
 
         client.register_function(function_name, poll_five_times)
 
@@ -175,10 +176,10 @@ class TestNetwork(unittest.TestCase):
         function_name = "poll_five_times"
 
         @client.uses_sender
-        def poll_five_times(send_result):
+        def poll_five_times(sender):
             for i in range(3):
                 time.sleep(0.1)
-                send_result(i)
+                sender.send_result(i)
 
         client.register_function(function_name, poll_five_times)
 
@@ -217,10 +218,10 @@ class TestNetwork(unittest.TestCase):
         ]
 
         @client.uses_sender
-        def poll_five_times(send_result, a, b, c=1, d=2):
+        def poll_five_times(sender, a, b, c=1, d=2):
             for i in range(3):
                 time.sleep(0.1)
-                send_result(f"{i} {a} {b} {c} {d}")
+                sender.send_result(f"{i} {a} {b} {c} {d}")
 
         client.register_function(function_name, poll_five_times)
 
@@ -264,10 +265,10 @@ class TestNetwork(unittest.TestCase):
             f"{i} 142437 48126 9351 2451" for i in range(3)
         ]
 
-        def poll_five_times(send_result, a, b, c=1, d=2):
+        def poll_five_times(sender, a, b, c=1, d=2):
             for i in range(3):
                 time.sleep(0.1)
-                send_result(f"{i} {a} {b} {c} {d}")
+                sender.send_result(f"{i} {a} {b} {c} {d}")
 
         client_1.register_function(function_name, client_1.uses_sender(poll_five_times))
         client_2.register_function(function_name, client_2.uses_sender(poll_five_times))
@@ -340,10 +341,10 @@ class TestNetwork(unittest.TestCase):
         function_name = "poll_five_times"
 
         @client.uses_sender
-        def poll_five_times(send_result):
+        def poll_five_times(sender):
             for i in range(3):
                 time.sleep(0.1)
-                send_result(i)
+                sender.send_result(i)
 
         client.register_function(function_name, poll_five_times)
 
@@ -370,6 +371,74 @@ class TestNetwork(unittest.TestCase):
         callback.assert_has_calls(
             [call(result) for result in job.results]
         )
+
+    def test_server_client_metrics(self):
+        """
+        Tests asynchronous polling commands called to client (with args and kwargs)
+        """
+        client = EdgeNetClient(self.server_url)
+        client.run(run_forever=False)
+
+        function_name = "poll_five_times"
+
+        args = [623, 123]
+        kwargs = {"c": 421, "d": 125}
+
+        expected_results = [
+            f"{i} 623 123 421 125" for i in range(3)
+        ]
+
+        @client.uses_sender
+        @uses_timer
+        def poll_five_times(timer, sender, a, b, c=1, d=2):
+            timer.start_section("initial-sleep")
+            time.sleep(0.1)
+            timer.end_section("initial-sleep")
+            for i in range(3):
+                timer.start_looped_section("looped-sleep")
+                time.sleep(0.1)
+                sender.send_result(f"{i} {a} {b} {c} {d}")
+                timer.end_looped_section("looped-sleep")
+
+            timer.end_function()
+            sender.send_metrics(timer)
+
+        client.register_function(function_name, poll_five_times)
+
+        self.server.sleep(0.1)
+
+        job = self.server.send_command_external(
+            client.session_id, function_name, is_polling=True,
+            *args, **kwargs
+        )
+
+        self.server.sleep(0.5)
+
+        # Check correctness of results
+        for result in expected_results:
+            self.assertIn(result, job.raw_results)
+
+        # Check if threads have closed
+        for thread in client.job_threads[job.job_id]:
+            self.assertFalse(thread.is_alive())
+
+        # Check if metrics are recorded to job
+        self.assertIsInstance(job.metrics, Timer)
+        self.assertEqual(job.metrics.function_name, function_name)
+        self.assertIsNotNone(job.metrics.call_id)
+        self.assertIsInstance(job.metrics.function_time, TimerSection)
+        self.assertIsInstance(job.metrics.sections["initial-sleep"], TimerSection)
+        for _, section_list in job.metrics.looped_sections.items():
+            for section in section_list:
+                self.assertIsInstance(section, TimerSection)
+
+        # Check if all metrics are non-zero (should be, anyway)
+        self.assertGreater(job.metrics.function_time.elapsed, 0.0)
+        for _, section in job.metrics.sections.items():
+            self.assertGreater(section.elapsed, 0.0)
+        for _, section_list in job.metrics.looped_sections.items():
+            for section in section_list:
+                self.assertGreater(section.elapsed, 0.0)
 
 
 class TestMessage(unittest.TestCase):

@@ -1,5 +1,6 @@
 import asyncio, uuid, json
 import websockets
+from metrics.time import Timer
 from .session import EdgeNetSession
 from .message import EdgeNetMessage
 from .job import EdgeNetJob, EdgeNetJobResult
@@ -64,6 +65,12 @@ class EdgeNetServer:
             if message.msg_type == MSG_FINISH:
                 logging.debug(f"Message was of FINISH type for job ID:[{message.job_id[-12:]}].")
                 self.jobs[message.job_id].finish_job()
+
+            # If message contains metrics data
+            if message.msg_type == MSG_METRICS:
+                # Register Timer object to our job
+                timer_obj = Timer.create_from_dict(message.metrics)
+                self.jobs[message.job_id].metrics = timer_obj
 
     async def send_message(self, session_id, message: EdgeNetMessage):
         msg_dict = {

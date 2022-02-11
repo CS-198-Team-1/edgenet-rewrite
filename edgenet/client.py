@@ -134,10 +134,36 @@ class EdgeNetClient:
                 _thread.start()
                 self.job_threads[message.job_id].append(_thread)
 
+            # Asyncio caller for sending results
+            def _send_metrics(timer_object):
+                metrics_message = EdgeNetMessage.create_metrics_message(
+                    self.session_id, message.job_id, timer_object # Transform to dict
+                )
+
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+
+                loop.run_until_complete(self.send(metrics_message))
+                loop.close()
+
+            # Thread starter for the caller above, for concurrency
+            def send_metrics(timer_object):
+                _thread = threading.Thread(target=_send_metrics, args=[timer_object])
+                _thread.start()
+                self.job_threads[message.job_id].append(_thread)
+
+            # Make a generic class
+            class Sender: pass
+
+            # Assign sender functions
+            sender = Sender()
+            sender.send_result  = send_result
+            sender.send_metrics = send_metrics
+
             # Initialize job thread list
             self.job_threads[message.job_id] = []
 
-            result = func(send_result, *args, **kwargs)
+            result = func(sender, *args, **kwargs)
 
             # Cleanup for all the job threads
             for thread in self.job_threads[message.job_id]:

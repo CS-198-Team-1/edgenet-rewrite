@@ -36,6 +36,15 @@ class EdgeNetMessage:
         )
 
     @classmethod
+    def create_metrics_message(cls, session_id, job_id, timer_obj):
+        return cls(
+            session_id, MSG_METRICS,
+            job_id=job_id,
+            metrics=timer_obj.to_dict(),
+            sent_dttm=datetime.now().isoformat()
+        )
+
+    @classmethod
     def create_job_finished_message(cls, session_id, job_id):
         return cls(
             session_id, MSG_FINISH, job_id=job_id, 
