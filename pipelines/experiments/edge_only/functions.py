@@ -79,6 +79,10 @@ def capture_video(gpxc, send_result, video_path, frames_per_second=15, target="a
         # For index and confidence value of the first class [0]
         for i, confidence in enumerate(output_data[0]):
             if confidence > BASE_CONFIDENCE:
+                #execute_text_recognition(
+                #    send_result, gpxc, 
+                #    boxes[0][i], frame, confidence,
+                #)
                 execute_text_recognition_tflite(
                     send_result, gpxc, 
                     boxes[0][i], frame, confidence,
@@ -89,48 +93,6 @@ def capture_video(gpxc, send_result, video_path, frames_per_second=15, target="a
     # Release capturing
     cap.release()
     print("OpenCV capture released.")
-
-
-def execute_text_recognition(send_result, gpxc, boxes, frame, confidence):
-    x1, x2, y1, y2 = boxes[1], boxes[3], boxes[0], boxes[2]
-    save_frame = frame[
-        max( 0, int(y1*1079) ) : min( 1079, int(y2*1079) ),
-        max( 0, int(x1*1920) ) : min( 1079, int(x2*1920) )
-    ]
-    confidence_in_100 = int( confidence * 100 )
-
-    # Execute text recognition
-    reader = easyocr.Reader(["en"])
-    text = reader.readtext(save_frame, allowlist=ALLOWED_CHARS)
-
-    # Do nothing if text is empty
-    if not len(text): return 
-
-    # Preprocess plate text
-    license_plate = text[0][1].upper()
-    license_plate = license_plate.replace(" ", "")
-
-    # Check if license plate matches pattern
-    license_plate = text[0][1].upper()
-    license_plate = license_plate.replace(" ", "")
-
-    # Do nothing if not a valid plate number
-    if not lph_pattern.match(license_plate): return 
-
-    # A matching license plate is now found!
-    time_now = datetime.datetime.now().replace(tzinfo=None)
-    gpx_entry = gpxc.get_latest_entry(time_now)
-    lat, lng = gpx_entry.latlng
-    
-    print(f"License plate found! {license_plate} ({lat}, {lng})")
-
-    # Send result to cloud
-    send_result({
-        "time_now": time_now.isoformat(),
-        "plate": license_plate,
-        "lat": lat,
-        "lng": lng,
-    })
 
 
 def execute_text_recognition_tflite(send_result, gpxc, boxes, frame, confidence, interpreter, input_details, output_details):
