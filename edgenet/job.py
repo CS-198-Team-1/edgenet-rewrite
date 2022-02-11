@@ -1,4 +1,4 @@
-import asyncio
+import asyncio, time
 from datetime import datetime
 from .constants import *
 from .message import EdgeNetMessage
@@ -57,10 +57,10 @@ class EdgeNetJob:
         self.finished = True
 
     def wait_until_finished(self):
-        while not self.finished: pass
+        while not self.finished: time.sleep(0.01) # TODO: Improve this spin lock
 
     def wait_for_metrics(self):
-        while not self.metrics: pass
+        while not self.metrics: time.sleep(0.01) # TODO: Improve this spin lock
 
 
 class EdgeNetJobResult:
