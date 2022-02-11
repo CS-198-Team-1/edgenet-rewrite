@@ -9,12 +9,12 @@ def add_three_numbers(a, b, c):
     logging.info(f"Function call received for a={a}, b={b}, c={c}")
     return a + (2*b) + (3*c)
 
-def send_three_numbers(send_result, times):
+def send_three_numbers(sender, times):
     logging.info(f"Preparing to send out three numbers to server...")
     for i in range(times):
         time.sleep(0.1)
         a, b, c = i, i+6, i+10
-        send_result({
+        sender.send_result({
             "args": (a, b, c),
             "kwargs": {}
         })

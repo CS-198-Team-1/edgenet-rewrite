@@ -12,8 +12,10 @@ lph_pattern = re.compile("^[A-Z][A-Z][A-Z][0-9][0-9][0-9][0-9]?$")
 # We will relegate adding the uses_sender decorator in client.py
 @uses_timer
 @uses_gpx(GPX_PATH)
-def capture_video(gpxc, timer, send_result, video_path, frames_per_second=15, target="all"):
+def capture_video(gpxc, timer, sender, video_path, frames_per_second=15, target="all"):
     # OpenCV initialization
+    timer.start_section("initialization")
+
     cap = cv2.VideoCapture(video_path)
     interpreter = tf.lite.Interpreter(model_path=MODEL_PATH)
     interpreter.allocate_tensors()
@@ -25,8 +27,9 @@ def capture_video(gpxc, timer, send_result, video_path, frames_per_second=15, ta
     every_n_frames = VIDEO_FPS // frames_per_second # Check every n frames
     start_time = datetime.datetime.now()
 
+    timer.end_section("initialization")
+
     while cap.isOpened():
-        timer.start_looped_section("plate-detection")
 
         frame_counter += 1
 
@@ -48,6 +51,8 @@ def capture_video(gpxc, timer, send_result, video_path, frames_per_second=15, ta
             break # Execution is finished
 
         logging.info("[{:06d}][{}fps] Processing frames...".format(frame_counter, frames_per_second))
+
+        timer.start_looped_section("plate-detection")
 
         # Execute detection:
         # -- Resize frame to 320x320 square
@@ -79,7 +84,7 @@ def capture_video(gpxc, timer, send_result, video_path, frames_per_second=15, ta
             if confidence > BASE_CONFIDENCE:
                 timer.start_looped_section("plate-recognition")
                 execute_text_recognition(
-                    send_result, gpxc, 
+                    sender, gpxc, 
                     boxes[0][i], frame, confidence
                 )
                 timer.end_looped_section("plate-recognition")
@@ -94,8 +99,7 @@ def capture_video(gpxc, timer, send_result, video_path, frames_per_second=15, ta
     print(timer)
 
 
-
-def execute_text_recognition(send_result, gpxc, boxes, frame, confidence):
+def execute_text_recognition(sender, gpxc, boxes, frame, confidence):
     x1, x2, y1, y2 = boxes[1], boxes[3], boxes[0], boxes[2]
     save_frame = frame[
         max( 0, int(y1*1079) ) : min( 1079, int(y2*1079) ),
@@ -129,7 +133,7 @@ def execute_text_recognition(send_result, gpxc, boxes, frame, confidence):
     logging.info(f"License plate found! {license_plate} ({lat}, {lng})")
 
     # Send result to cloud
-    send_result({
+    sender.send_result({
         "time_now": time_now.isoformat(),
         "plate": license_plate,
         "lat": lat,
