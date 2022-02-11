@@ -1,4 +1,5 @@
-import time, uuid
+import time, uuid, datetime
+from dateutil.parser import parse as dttm_parse
 
 
 class Timer:
@@ -10,6 +11,8 @@ class Timer:
         self.function_name = function_name
 
         self.function_time = TimerSection()
+        self.function_started = datetime.datetime.now()
+        self.function_ended = None
 
         # Initialize section containers
         self.sections = {}
@@ -28,7 +31,9 @@ class Timer:
                     raise TimerException(f"Started looped section [{section_id}] never ended!")
         if self.function_time.end is not None:
             raise TimerException(f"Attempted to mark end of function call twice.")
+        
         self.function_time.end_section()
+        self.function_ended = datetime.datetime.now()
 
     def start_section(self, section_id):
         if section_id in self.sections: 
@@ -60,7 +65,7 @@ class Timer:
         last_section.end_section()
 
     def to_dict(self):
-        json_dict                 = self.__dict__
+        json_dict                 = self.__dict__.copy()
         json_dict_sections        = {}
         json_dict_looped_sections = {}
 
@@ -72,9 +77,11 @@ class Timer:
                 s.to_dict() for s in section_list
             ]
 
-        json_dict["sections"] = json_dict_sections
-        json_dict["looped_sections"] = json_dict_looped_sections
-        json_dict["function_time"] = self.function_time.to_dict()
+        json_dict["sections"]         = json_dict_sections
+        json_dict["looped_sections"]  = json_dict_looped_sections
+        json_dict["function_time"]    = self.function_time.to_dict()
+        json_dict["function_started"] = self.function_started.isoformat()
+        json_dict["function_ended"]   = self.function_ended.isoformat()
 
         return json_dict
 
@@ -95,6 +102,8 @@ class Timer:
             ] 
             for section, section_list in raw_dict["looped_sections"].items()
         }
+        timer.function_started = dttm_parse(raw_dict["function_started"])
+        timer.function_ended   = dttm_parse(raw_dict["function_ended"])
         return timer
 
 

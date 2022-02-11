@@ -1,4 +1,4 @@
-import unittest, threading, time
+import unittest, threading, time, datetime
 from unittest.mock import patch, Mock, call
 import websockets
 from edgenet.client import EdgeNetClient
@@ -422,8 +422,10 @@ class TestNetwork(unittest.TestCase):
         for thread in client.job_threads[job.job_id]:
             self.assertFalse(thread.is_alive())
 
-        # Check if metrics are recorded to job
+        # Check if metrics are recorded to job correctly
         self.assertIsInstance(job.metrics, Timer)
+        self.assertIsInstance(job.metrics.function_started, datetime.datetime)
+        self.assertIsInstance(job.metrics.function_ended, datetime.datetime)
         self.assertEqual(job.metrics.function_name, function_name)
         self.assertIsNotNone(job.metrics.call_id)
         self.assertIsInstance(job.metrics.function_time, TimerSection)

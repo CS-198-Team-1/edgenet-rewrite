@@ -2,8 +2,11 @@ import threading
 from edgenet.server import EdgeNetServer
 from config import *
 from .functions import *
+from metrics.experiment import Experiment
 
 CLOUD_ONLY_TIMES = 10
+
+experiment = Experiment("examples.simple")
 
 # Initialize server
 server = EdgeNetServer(SERVER_HOSTNAME, SERVER_PORT)
@@ -47,4 +50,11 @@ job = server.send_command_external(
     is_polling=True, callback=callback
 )
 
+experiment.jobs.append(job)
+
 job.wait_until_finished()
+job.wait_for_metrics()
+experiment.end_experiment()
+
+# Record metrics
+experiment.to_csv()

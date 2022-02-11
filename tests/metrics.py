@@ -1,3 +1,4 @@
+from datetime import datetime
 import unittest
 import time
 from metrics.time import TimerException, uses_timer
@@ -18,6 +19,8 @@ class TestMetrics(unittest.TestCase):
 
         timer = sleeper()
         self.assertGreater(timer.sections["1"].elapsed, 0.0)
+        self.assertGreater(timer.function_time.elapsed, 0.0)
+        self.assertIsInstance(timer.function_ended, datetime)
 
     def test_working_looped(self):
         """
@@ -36,6 +39,9 @@ class TestMetrics(unittest.TestCase):
         
         for section in timer.looped_sections["1"]:
             self.assertGreater(section.elapsed, 0.0)
+            
+        self.assertGreater(timer.function_time.elapsed, 0.0)
+        self.assertIsInstance(timer.function_ended, datetime)
 
     def test_exception_function_not_ended(self):
         """
