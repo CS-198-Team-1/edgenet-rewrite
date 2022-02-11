@@ -1,4 +1,4 @@
-import unittest
+import unittest, logging
 import tests
 
 
@@ -12,5 +12,7 @@ def suite():
 
 
 if __name__ == "__main__":
+    logging.disable(logging.CRITICAL) # Disable all logging
+
     runner = unittest.TextTestRunner()
     runner.run(suite())
