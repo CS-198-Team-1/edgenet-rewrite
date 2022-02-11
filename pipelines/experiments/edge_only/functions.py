@@ -1,6 +1,8 @@
 import re, datetime, cv2, easyocr, numpy as np, tensorflow as tf
 from gpx import uses_gpx
+from metrics.time import uses_timer
 from .constants import *
+from config import *
 
 
 # License plate pattern for PH plates
@@ -8,8 +10,9 @@ lph_pattern = re.compile("^[A-Z][A-Z][A-Z][0-9][0-9][0-9][0-9]?$")
 
 
 # We will relegate adding the uses_sender decorator in client.py
+@uses_timer
 @uses_gpx(GPX_PATH)
-def capture_video(gpxc, send_result, video_path, frames_per_second=15, target="all"):
+def capture_video(gpxc, timer, send_result, video_path, frames_per_second=15, target="all"):
     # OpenCV initialization
     cap = cv2.VideoCapture(video_path)
     interpreter = tf.lite.Interpreter(model_path=MODEL_PATH)
@@ -23,6 +26,8 @@ def capture_video(gpxc, send_result, video_path, frames_per_second=15, target="a
     start_time = datetime.datetime.now()
 
     while cap.isOpened():
+        timer.start_looped_section("plate-detection")
+
         frame_counter += 1
 
         if frame_counter % VIDEO_FPS == 0:
@@ -42,7 +47,7 @@ def capture_video(gpxc, send_result, video_path, frames_per_second=15, target="a
             # raise LPRException("cap.read() returned invalid values!")
             break # Execution is finished
 
-        print("[{:06d}][{}fps] Processing frames...".format(frame_counter, frames_per_second))
+        logging.info("[{:06d}][{}fps] Processing frames...".format(frame_counter, frames_per_second))
 
         # Execute detection:
         # -- Resize frame to 320x320 square
@@ -67,18 +72,27 @@ def capture_video(gpxc, send_result, video_path, frames_per_second=15, target="a
         # Bounding boxes
         boxes = interpreter.get_tensor(output_details[1]['index'])
 
+        timer.end_looped_section("plate-detection")
+
         # For index and confidence value of the first class [0]
         for i, confidence in enumerate(output_data[0]):
             if confidence > BASE_CONFIDENCE:
+                timer.start_looped_section("plate-recognition")
                 execute_text_recognition(
                     send_result, gpxc, 
                     boxes[0][i], frame, confidence
                 )
+                timer.end_looped_section("plate-recognition")
 
-    print("End of video detected. Ending execution...")
+    logging.info("End of video detected. Ending execution...")
     # Release capturing
     cap.release()
-    print("OpenCV capture released.")
+    logging.info("OpenCV capture released.")
+
+    timer.end_function() # Record end of whole function
+
+    print(timer)
+
 
 
 def execute_text_recognition(send_result, gpxc, boxes, frame, confidence):
@@ -112,7 +126,7 @@ def execute_text_recognition(send_result, gpxc, boxes, frame, confidence):
     gpx_entry = gpxc.get_latest_entry(time_now)
     lat, lng = gpx_entry.latlng
     
-    print(f"License plate found! {license_plate} ({lat}, {lng})")
+    logging.info(f"License plate found! {license_plate} ({lat}, {lng})")
 
     # Send result to cloud
     send_result({
@@ -123,5 +137,4 @@ def execute_text_recognition(send_result, gpxc, boxes, frame, confidence):
     })
 
 
-class LPRException(Exception):
-    pass
+class LPRException(Exception): pass
