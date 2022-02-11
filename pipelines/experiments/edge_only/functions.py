@@ -104,6 +104,7 @@ def execute_text_recognition_tflite(send_result, gpxc, boxes, frame, confidence,
     confidence_in_100 = int( confidence * 100 )
 
     # Execute text recognition
+
     test_image = cv2.resize(save_frame,(94,24))/256
     test_image = np.expand_dims(test_image,axis=0)
     test_image = test_image.astype(np.float32)
@@ -118,6 +119,7 @@ def execute_text_recognition_tflite(send_result, gpxc, boxes, frame, confidence,
     # Do nothing if text is empty
     if not len(text): return 
     license_plate = text
+    text[:3].replace("0",'O')
 
     # Do nothing if not a valid plate number
     #if not lph_pattern.match(license_plate): return 
