@@ -5,9 +5,10 @@ import tests
 def suite():
     _edgenet = unittest.TestLoader().loadTestsFromModule(tests.edgenet)
     _gpx = unittest.TestLoader().loadTestsFromModule(tests.gpx)
+    _metrics = unittest.TestLoader().loadTestsFromModule(tests.metrics)
     
     return unittest.TestSuite([
-        _edgenet, _gpx
+        _edgenet, _gpx, _metrics
     ])
 
 
