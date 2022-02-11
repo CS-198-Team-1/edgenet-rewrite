@@ -8,11 +8,13 @@ def parse_gpx_and_sync_now(gpx_file_path):
     
     # Get first entry and get its offset to current time
     first_entry = gpx_collection.entries[0]
-    time_now = datetime.datetime.now().replace(microsecond=0)
+    time_now = datetime.datetime.now()
     delta = (time_now - first_entry.dttm)
 
     for entry in gpx_collection.entries:
         entry.dttm += delta
+
+    gpx_collection.start_time = time_now
 
     return gpx_collection
 

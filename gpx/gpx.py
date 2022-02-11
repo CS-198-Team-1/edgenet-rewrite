@@ -5,7 +5,7 @@ def uses_gpx(gpx_file_path):
     def _uses_gpx(func):
 
         def wrapper(*args, **kwargs):
-            # Parse the GPXCollection
+            # Parse and sync the GPXCollection
             gpx_collection = parse_gpx_and_sync_now(gpx_file_path)
 
             # Pass the GPXCollection here
