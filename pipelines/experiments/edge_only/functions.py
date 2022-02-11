@@ -2,9 +2,6 @@ import re, datetime, cv2, easyocr, numpy as np, tensorflow as tf
 from gpx import uses_gpx
 from .constants import *
 
-CHARS = "ABCDEFGHIJKLMNPQRSTUVWXYZ0123456789" # exclude I, O
-CHARS_DICT = {char:i for i, char in enumerate(CHARS)}
-DECODE_DICT = {i:char for i, char in enumerate(CHARS)}
 
 # License plate pattern for PH plates
 lph_pattern = re.compile("^[A-Z][A-Z][A-Z][0-9][0-9][0-9][0-9]?$")
@@ -18,14 +15,8 @@ def capture_video(gpxc, send_result, video_path, frames_per_second=15, target="a
     interpreter = tf.lite.Interpreter(model_path=MODEL_PATH)
     interpreter.allocate_tensors()
 
-    recog_interpreter = tf.lite.Interpreter(model_path=RECOG_MODEL_PATH)
-    recog_interpreter.allocate_tensors()
-
     input_details = interpreter.get_input_details()
     output_details = interpreter.get_output_details()
-
-    recog_input_details = recog_interpreter.get_input_details()
-    recog_output_details = recog_interpreter.get_output_details()
 
     frame_counter = 0 # Frame counter
     every_n_frames = VIDEO_FPS // frames_per_second # Check every n frames
@@ -79,14 +70,9 @@ def capture_video(gpxc, send_result, video_path, frames_per_second=15, target="a
         # For index and confidence value of the first class [0]
         for i, confidence in enumerate(output_data[0]):
             if confidence > BASE_CONFIDENCE:
-                #execute_text_recognition(
-                #    send_result, gpxc, 
-                #    boxes[0][i], frame, confidence,
-                #)
-                execute_text_recognition_tflite(
+                execute_text_recognition(
                     send_result, gpxc, 
-                    boxes[0][i], frame, confidence,
-                    recog_interpreter,recog_input_details,recog_output_details
+                    boxes[0][i], frame, confidence
                 )
 
     print("End of video detected. Ending execution...")
@@ -95,31 +81,28 @@ def capture_video(gpxc, send_result, video_path, frames_per_second=15, target="a
     print("OpenCV capture released.")
 
 
-def execute_text_recognition_tflite(send_result, gpxc, boxes, frame, confidence, interpreter, input_details, output_details):
+def execute_text_recognition(send_result, gpxc, boxes, frame, confidence):
     x1, x2, y1, y2 = boxes[1], boxes[3], boxes[0], boxes[2]
     save_frame = frame[
         max( 0, int(y1*1079) ) : min( 1079, int(y2*1079) ),
-        max( 0, int(x1*1920) ) : min( 1920, int(x2*1920) )
+        max( 0, int(x1*1920) ) : min( 1079, int(x2*1920) )
     ]
     confidence_in_100 = int( confidence * 100 )
 
     # Execute text recognition
+    reader = easyocr.Reader(["en"])
+    text = reader.readtext(save_frame, allowlist=ALLOWED_CHARS)
 
-    test_image = cv2.resize(save_frame,(94,24))/256
-    test_image = np.expand_dims(test_image,axis=0)
-    test_image = test_image.astype(np.float32)
-    interpreter.set_tensor(input_details[0]['index'], test_image)
-    interpreter.invoke()
-    output_data = interpreter.get_tensor(output_details[0]['index'])
-    decoded = tf.keras.backend.ctc_decode(output_data,(24,),greedy=False)
-    text = ""
-    for i in np.array(decoded[0]).reshape(24):
-        if i >-1:
-            text += DECODE_DICT[i]
     # Do nothing if text is empty
     if not len(text): return 
-    license_plate = text
-    text[:3].replace("0",'O')
+
+    # Preprocess plate text
+    license_plate = text[0][1].upper()
+    license_plate = license_plate.replace(" ", "")
+
+    # Check if license plate matches pattern
+    license_plate = text[0][1].upper()
+    license_plate = license_plate.replace(" ", "")
 
     # Do nothing if not a valid plate number
     if not lph_pattern.match(license_plate): return 

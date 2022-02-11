@@ -4,7 +4,7 @@ from .session import EdgeNetSession
 from .message import EdgeNetMessage
 from .job import EdgeNetJob, EdgeNetJobResult
 from .constants import *
-from config import *
+from edgenet import session
 
 
 class EdgeNetServer:
@@ -16,8 +16,6 @@ class EdgeNetServer:
         # Set empty dict to store sessions
         self.sessions = {}
         self.jobs     = {}
-
-        logging.debug(f"EdgeNetServer for host {hostname}:{port} instantiated.")
 
     def run(self):
         loop = asyncio.new_event_loop()
@@ -46,23 +44,19 @@ class EdgeNetServer:
         async for msg in websocket:
             # Parse JSON message to Python dict:
             message = EdgeNetMessage.create_from_json(msg)
-            logging.debug(f"Message received from session ID:[{message.session_id[-12:]}]")
 
             # If message is a handshake:
             if message.msg_type == MSG_CONNECTION:
                 # Store session
                 session = EdgeNetSession.create_from_handshake(msg, websocket)
                 self.sessions[message.session_id] = session
-                logging.debug(f"Message was of CONNECTION type, successfully registered session ID:[{message.session_id[-12:]}].")
 
             # If message is a job result
             if message.msg_type == MSG_RESULT:
-                logging.debug(f"Message was of RESULT type for job ID:[{message.job_id[-12:]}].")
                 self.jobs[message.job_id].register_result_from_message(message)
 
             # If message indicates that a job is finished
             if message.msg_type == MSG_FINISH:
-                logging.debug(f"Message was of FINISH type for job ID:[{message.job_id[-12:]}].")
                 self.jobs[message.job_id].finish_job()
 
     async def send_message(self, session_id, message: EdgeNetMessage):
@@ -87,13 +81,9 @@ class EdgeNetServer:
         )
         self.jobs[job.job_id] = job
 
-        logging.debug(f"EdgeNetJob instantiated with job ID:[{job.job_id[-12:]}], with args:{args} and kwargs={kwargs}")
-
         # Create the command message and send it
         command_message = job.create_command_message(session_id, is_polling=is_polling)
         await self.send_message(session_id, command_message)
-
-        logging.debug(f"Job command message for job ID:[{job.job_id[-12:]}] has been sent.")
 
         # Return the job object
         return job

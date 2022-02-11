@@ -69,12 +69,6 @@ class EdgeNetJobResult:
         self.sent_dttm  = sent_dttm
         self.recv_dttm  = recv_dttm
 
-    @property
-    def args(self): return self.result["args"]
-
-    @property
-    def kwargs(self): return self.result["kwargs"]
-
 
 class EdgeNetJobException(Exception):
     pass

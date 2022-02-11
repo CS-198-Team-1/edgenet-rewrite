@@ -1,9 +1,10 @@
-import uuid, asyncio, json, threading
+import threading
+import uuid, asyncio, json
 import websockets
 
 from edgenet.constants import MSG_COMMAND, MSG_COMMAND_POLL
 from .message import EdgeNetMessage
-from config import *
+
 
 class EdgeNetClient:
     def __init__(self, server_url, session_id=None):
@@ -20,8 +21,6 @@ class EdgeNetClient:
 
         # Collection of open threads to be cleaned up
         self.job_threads = {}
-        
-        logging.debug(f"EdgeNetClient for host {server_url} instantiated with session ID {self.session_id[-12:]}")
 
     def run(self, run_forever=True):
         loop = asyncio.get_event_loop()
@@ -38,7 +37,6 @@ class EdgeNetClient:
         loop.run_until_complete(_close_client())
 
     async def perform_handshake(self):
-        logging.debug(f"Attempting to connect to server...")
         while True:
             try:
                 self.connection = await websockets.connect(self.server_url)
@@ -50,7 +48,6 @@ class EdgeNetClient:
         handshake_message = EdgeNetMessage.create_client_handshake_message(self.session_id)
         
         await self.send(handshake_message)
-        logging.debug(f"Connection successful!")
 
     async def handle_commands(self):
         while True:
@@ -61,29 +58,18 @@ class EdgeNetClient:
             except websockets.ConnectionClosedError:
                 break
 
-            logging.debug("Message received from server!")
             message = EdgeNetMessage.create_from_json(msg)
 
             # If message is a command from the server:
             if message.msg_type == MSG_COMMAND:
-                logging.debug(f"Message is of COMMAND type, running function with name [{message.function_name}] with job ID:[{message.job_id[-12:]}]")
-
                 function_call = self.get_function(message.function_name)
                 result = function_call(*message.args, **message.kwargs)
-                
-                logging.debug(f"Function call for job ID:[{message.job_id[-12:]}] completed, sending the result...")
-                
                 # Create result message
                 result_message = EdgeNetMessage.create_result_message(
                     self.session_id, message.job_id, result
                 )
                 await self.send(result_message)
-                
-                logging.debug(f"Result message sent! Now sending FINISH message for job ID:{message.job_id[-12:]}...")
-                
                 await self.send_job_finished(message.job_id)
-
-                logging.debug(f"FINISH message sent for job ID:[{message.job_id[-12:]}]!")
             
             # If message is a polling command
             if message.msg_type == MSG_COMMAND_POLL:
@@ -111,7 +97,6 @@ class EdgeNetClient:
 
     def register_function(self, function_name, function_method):
         setattr(self, function_name, function_method)
-        logging.debug(f"Function registered with name [{function_name}].")
         return True
 
     def uses_sender(self, func):
