@@ -99,7 +99,7 @@ def execute_text_recognition_tflite(send_result, gpxc, boxes, frame, confidence,
     x1, x2, y1, y2 = boxes[1], boxes[3], boxes[0], boxes[2]
     save_frame = frame[
         max( 0, int(y1*1079) ) : min( 1079, int(y2*1079) ),
-        max( 0, int(x1*1920) ) : min( 1079, int(x2*1920) )
+        max( 0, int(x1*1920) ) : min( 1920, int(x2*1920) )
     ]
     confidence_in_100 = int( confidence * 100 )
 
