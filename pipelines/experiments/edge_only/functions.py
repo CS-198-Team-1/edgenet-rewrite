@@ -122,7 +122,7 @@ def execute_text_recognition_tflite(send_result, gpxc, boxes, frame, confidence,
     text[:3].replace("0",'O')
 
     # Do nothing if not a valid plate number
-    #if not lph_pattern.match(license_plate): return 
+    if not lph_pattern.match(license_plate): return 
 
     # A matching license plate is now found!
     time_now = datetime.datetime.now().replace(tzinfo=None)
