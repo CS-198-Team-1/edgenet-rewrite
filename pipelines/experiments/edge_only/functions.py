@@ -79,10 +79,6 @@ def capture_video(gpxc, send_result, video_path, frames_per_second=15, target="a
         # For index and confidence value of the first class [0]
         for i, confidence in enumerate(output_data[0]):
             if confidence > BASE_CONFIDENCE:
-                #execute_text_recognition(
-                #    send_result, gpxc, 
-                #    boxes[0][i], frame, confidence,
-                #)
                 execute_text_recognition_tflite(
                     send_result, gpxc, 
                     boxes[0][i], frame, confidence,
