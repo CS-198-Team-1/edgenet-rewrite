@@ -18,7 +18,14 @@ class Timer:
     def __repr__(self):
         return f"<Timer sections:{self.sections.keys()}, looped:{self.looped_sections.keys()}>"
 
-    def end_function(self): 
+    def end_function(self):
+        for section_id, section in self.sections.items():
+            if section.end is None:
+                raise TimerException(f"Started section [{section_id}] never ended!")
+        for section_id, section_list in self.looped_sections.items():
+            for section in section_list:
+                if section.end is None:
+                    raise TimerException(f"Started looped section [{section_id}] never ended!")
         if self.function_time.end is not None:
             raise TimerException(f"Attempted to mark end of function call twice.")
         self.function_time.end_section()
@@ -31,6 +38,8 @@ class Timer:
     def end_section(self, section_id):
         if section_id not in self.sections:
             raise TimerException(f"Attempted to end a section ({section_id}) that does not exist.")
+        if self.sections[section_id].end is not None:
+            raise TimerException(f"Attempted to end a section ({section_id}) twice!")
         self.sections[section_id].end_section()
 
     def start_looped_section(self, section_id):
@@ -122,6 +131,13 @@ def uses_timer(func):
 
     def wrapper(*args, **kwargs):
         timer = Timer(func.__name__, str(uuid.uuid4()))
-        return func(timer, *args, **kwargs)
+
+        result = func(timer, *args, **kwargs)
+
+        if timer.function_time.end is None:
+            raise TimerException("Timer's end_function never called!")
+
+        return result
+
 
     return wrapper
