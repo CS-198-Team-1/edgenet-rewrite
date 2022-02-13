@@ -29,6 +29,18 @@ class EdgeNetJob:
     def raw_results(self):
         return [r.result for r in self.results]
 
+    @property
+    def job_started(self):
+        return min([ m.function_started for _, m in self.metrics.items() ])
+
+    @property
+    def job_ended(self):
+        return max([ m.function_ended for _, m in self.metrics.items() ])
+
+    @property
+    def elapsed(self):
+        return self.job_ended - self.job_started
+
     def create_command_message(self, target, is_polling):
         return EdgeNetMessage(
             target, MSG_COMMAND_POLL if is_polling else MSG_COMMAND,

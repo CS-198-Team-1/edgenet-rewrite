@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.3.0] - 2021-02-14
+### Added
+- New termination procedure that can be called out through the async coroutine `EdgeNetServer.send_teriminate` and its partner function `EdgeNetServer.send_terminate_external` that can kill the client process running on the edge.
+- New entry in configuration file `TERMINATE_CLIENTS_ON_RECEIVE` that dictates if the client process is killed through `os.kill` if a termination message is received.
+- New `Job.register_metrics` command that properly adds a new `Timer` object to its `.metrics` dictionary and modifies its current.
+- New `Job.elapsed`, `Job.job_started`, and `Job.job_ended` property functions that now consolidate data from all of its Timer objects under `.metrics`.
+
+### Changed
+- `Job.metrics` is now a dictionary of function call IDs and their `Timer` objects, instead of the original one-to-one correspondence of the previous implementation.
+
 ## [1.2.0] - 2021-02-12
 ### Added
 - New `callback` keyword argument for `EdgeNetServer.send_command` and `EdgeNetServer.send_command_external` that is called when a job result is received. The `EdgeNetJobResult` object associated with the result is passed to the function.

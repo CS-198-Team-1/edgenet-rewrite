@@ -32,13 +32,13 @@ class Experiment:
         jobs_data = []
         metrics_data = []
         for job in self.jobs:
+            data = (
+                self.experiment_id, job.job_id, job.function_name,
+                job.elapsed, job.job_started.isoformat(), job.job_ended.isoformat()
+            )
+            jobs_data.append(data)
             for call_id, metric in job.metrics.items():
                 ft = metric.function_time
-                data = (
-                    self.experiment_id, job.job_id, job.function_name,
-                    ft.elapsed, metric.function_started.isoformat(), metric.function_ended.isoformat()
-                )
-                jobs_data.append(data)
 
                 for name, section in metric.sections.items():
                     data = (
