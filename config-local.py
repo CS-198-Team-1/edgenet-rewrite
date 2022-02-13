@@ -8,6 +8,11 @@ SERVER_PORT         = 8765
 SYSTEM_ARCH = "amd64" # For most Linux servers
 # SYSTEM_ARCH = "arm64v8" # For RPi 4
 
+# Edgenet configuration
+# -- Kill script through sys.exit() when termination message is received:
+# -- Note: this is overriden by test.py in order to do tests gracefully
+TERMINATE_CLIENTS_ON_RECEIVE = True
+
 # Streaming config
 RTSP_PORT = 8554 # See rtsp-simple-server.yml:107 to change RTMP port as well.
 RTSP_URL = f"rtsp://{SERVER_HOSTNAME}:{RTSP_PORT}"

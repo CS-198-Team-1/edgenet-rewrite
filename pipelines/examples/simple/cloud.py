@@ -54,7 +54,10 @@ experiment.jobs.append(job)
 
 job.wait_until_finished()
 job.wait_for_metrics()
-experiment.end_experiment()
 
-# Record metrics
+# Terminate client
+server.send_terminate_external(session_id)
+
+# End experiment and record metrics
+experiment.end_experiment()
 experiment.to_csv()

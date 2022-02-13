@@ -1,5 +1,6 @@
 import time, uuid, datetime
 from dateutil.parser import parse as dttm_parse
+from config import *
 
 
 class Timer:
@@ -140,6 +141,8 @@ def uses_timer(func):
 
     def wrapper(*args, **kwargs):
         timer = Timer(func.__name__, str(uuid.uuid4()))
+
+        logging.info(f"Timer metrics instantiated with call ID {timer.call_id}")
 
         result = func(timer, *args, **kwargs)
 

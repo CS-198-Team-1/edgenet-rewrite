@@ -9,6 +9,8 @@ class EdgeNetSession:
     def __init__(self, session_id, websocket):
         self.session_id = session_id
         self.websocket  = websocket
+        
+        self.terminated = False
 
     @classmethod
     def create_from_handshake(cls, raw_json, websocket):
@@ -17,4 +19,9 @@ class EdgeNetSession:
 
     @property
     def status(self):
+        if self.terminated: return SESSION_TERMINATED
         return SESSION_CONNECTED if self.websocket.open else SESSION_DISCONNECTED
+
+    def terminate(self):
+        self.terminated = True
+        self.websocket = None

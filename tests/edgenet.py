@@ -80,6 +80,46 @@ class TestNetwork(unittest.TestCase):
 
         self.assertTrue(client.connection.closed)
 
+    def test_server_client_terminate(self):
+        """
+        Tests the server's termination procedure.
+        """
+        client = EdgeNetClient(self.server_url, terminate_on_receive=False)
+
+        # Check if session_id is NOT YET in server's sessions dict
+        self.assertNotIn(client.session_id, self.server.sessions)
+
+        client.run(run_forever=False)
+        self.server.sleep(0.1)
+
+        # Check if session_id is in server's sessions dict
+        self.assertIn(client.session_id, self.server.sessions)
+
+        # Fetch session and check attributes
+        session = self.server.sessions[client.session_id]
+        self.assertEqual(session.session_id, client.session_id)
+        self.assertEqual(session.status, SESSION_CONNECTED)
+        self.assertIsInstance(
+            session.websocket, 
+            websockets.legacy.server.WebSocketServerProtocol
+        )
+
+        self.assertTrue(session.websocket.open)
+
+        # Terminate the client from the server
+        self.server.send_terminate_external(session.session_id)
+
+        self.server.sleep(0.1)
+
+        # Fetch session and check attributes, in the server
+        session = self.server.sessions[client.session_id]
+        self.assertEqual(session.session_id, client.session_id)
+        self.assertEqual(session.status, SESSION_TERMINATED)
+        self.assertIsNone(session.websocket)
+
+        # Check if client has disconnected, itself      
+        self.assertTrue(client.connection.closed)
+
     def test_server_client_command(self):
         """
         Tests command called to client
@@ -422,23 +462,27 @@ class TestNetwork(unittest.TestCase):
         for thread in client.job_threads[job.job_id]:
             self.assertFalse(thread.is_alive())
 
+        # Get metrics object
+        _timer = [*job.metrics][0] # Get call ID
+        _timer = job.metrics[_timer]
+
         # Check if metrics are recorded to job correctly
-        self.assertIsInstance(job.metrics, Timer)
-        self.assertIsInstance(job.metrics.function_started, datetime.datetime)
-        self.assertIsInstance(job.metrics.function_ended, datetime.datetime)
-        self.assertEqual(job.metrics.function_name, function_name)
-        self.assertIsNotNone(job.metrics.call_id)
-        self.assertIsInstance(job.metrics.function_time, TimerSection)
-        self.assertIsInstance(job.metrics.sections["initial-sleep"], TimerSection)
-        for _, section_list in job.metrics.looped_sections.items():
+        self.assertIsInstance(_timer, Timer)
+        self.assertIsInstance(_timer.function_started, datetime.datetime)
+        self.assertIsInstance(_timer.function_ended, datetime.datetime)
+        self.assertEqual(_timer.function_name, function_name)
+        self.assertIsNotNone(_timer.call_id)
+        self.assertIsInstance(_timer.function_time, TimerSection)
+        self.assertIsInstance(_timer.sections["initial-sleep"], TimerSection)
+        for _, section_list in _timer.looped_sections.items():
             for section in section_list:
                 self.assertIsInstance(section, TimerSection)
 
         # Check if all metrics are non-zero (should be, anyway)
-        self.assertGreater(job.metrics.function_time.elapsed, 0.0)
-        for _, section in job.metrics.sections.items():
+        self.assertGreater(_timer.function_time.elapsed, 0.0)
+        for _, section in _timer.sections.items():
             self.assertGreater(section.elapsed, 0.0)
-        for _, section_list in job.metrics.looped_sections.items():
+        for _, section_list in _timer.looped_sections.items():
             for section in section_list:
                 self.assertGreater(section.elapsed, 0.0)
 

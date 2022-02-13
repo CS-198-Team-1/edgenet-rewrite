@@ -1,13 +1,17 @@
-import uuid, asyncio, json, threading
+import uuid, asyncio, json, threading, os
 import websockets
 
-from edgenet.constants import INITIAL_BACKOFF_TIME_IN_SECONDS, MAX_BACKOFF_TIME_IN_SECONDS, MSG_COMMAND, MSG_COMMAND_POLL
+from edgenet.constants import *
 from .message import EdgeNetMessage
 from config import *
 
 class EdgeNetClient:
-    def __init__(self, server_url, session_id=None):
-        self.server_url = server_url
+    def __init__(
+        self, server_url, session_id=None, 
+        terminate_on_receive=TERMINATE_CLIENTS_ON_RECEIVE
+    ):
+        self.server_url           = server_url
+        self.terminate_on_receive = terminate_on_receive
 
         # Generate a random UUID if not given
         if session_id is None:
@@ -30,12 +34,17 @@ class EdgeNetClient:
         
         if run_forever: loop.run_forever()
 
-    def close(self):
-        async def _close_client():
-            await self.connection.close()
+    async def _close(self):
+        await self.connection.close()
 
+    def close(self, close_forever=False):
         loop = asyncio.get_event_loop()
-        loop.run_until_complete(_close_client())
+        loop.run_until_complete(self._close())
+        
+        # Only set close_forever to True if no clients will be spawned again
+        # in the same thread
+        if close_forever: 
+            loop.close()
 
     async def perform_handshake(self):
         backoff_time = INITIAL_BACKOFF_TIME_IN_SECONDS
@@ -94,6 +103,11 @@ class EdgeNetClient:
                 result = function_call(message, *message.args, **message.kwargs)
                 await self.send_job_finished(message.job_id)
 
+            if message.msg_type == MSG_TERMINATE:
+                await self._close()
+                if self.terminate_on_receive:
+                    os.kill(os.getpid(), 9)
+
     async def send(self, message: EdgeNetMessage):
         msg_dict = {
             "session_id": message.session_id,
@@ -136,6 +150,7 @@ class EdgeNetClient:
                 _thread = threading.Thread(target=_send_result, args=[result])
                 _thread.start()
                 self.job_threads[message.job_id].append(_thread)
+                logging.debug("Timer metrics successfully sent to server.")
 
             # Asyncio caller for sending results
             def _send_metrics(timer_object):
@@ -148,6 +163,7 @@ class EdgeNetClient:
 
                 loop.run_until_complete(self.send(metrics_message))
                 loop.close()
+                logging.info(f"Metrics for {timer_object.call_id[-12:]} successfully sent to server.")
 
             # Thread starter for the caller above, for concurrency
             def send_metrics(timer_object):

@@ -43,6 +43,9 @@ capture_video(rtsp_url)
 job.wait_until_finished()
 job.wait_for_metrics()
 
+# Terminate client
+server.send_terminate_external(session_id)
+
 # Record results
 experiment.end_experiment()
 experiment.to_csv()

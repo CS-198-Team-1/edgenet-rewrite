@@ -16,7 +16,7 @@ class EdgeNetJob:
         self.callback      = callback
 
         self.results = []
-        self.metrics = None # Timer object here later
+        self.metrics = {} # Timer object here later
 
         # Spin lock for finishing a job
         self.finished = False
@@ -53,14 +53,16 @@ class EdgeNetJob:
         if self.callback:
             self.callback(new_result)
 
+    def register_metrics(self, timer_obj): self.metrics[timer_obj.call_id] = timer_obj
+
     def finish_job(self):
         self.finished = True
 
     def wait_until_finished(self):
         while not self.finished: time.sleep(0.01) # TODO: Improve this spin lock
 
-    def wait_for_metrics(self):
-        while not self.metrics: time.sleep(0.01) # TODO: Improve this spin lock
+    def wait_for_metrics(self, number_of_metrics=1):
+        while len(self.metrics) != number_of_metrics: time.sleep(0.01) # TODO: Improve this spin lock
 
 
 class EdgeNetJobResult:

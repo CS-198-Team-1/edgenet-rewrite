@@ -32,28 +32,28 @@ class Experiment:
         jobs_data = []
         metrics_data = []
         for job in self.jobs:
-            metrics = job.metrics
-            ft = metrics.function_time
-            data = (
-                self.experiment_id, job.job_id, job.function_name,
-                ft.elapsed, metrics.function_started.isoformat(), metrics.function_ended.isoformat()
-            )
-            jobs_data.append(data)
-
-            for name, section in metrics.sections.items():
+            for call_id, metric in job.metrics.items():
+                ft = metric.function_time
                 data = (
-                    job.job_id, metrics.call_id, name, None,
-                    section.elapsed
+                    self.experiment_id, job.job_id, job.function_name,
+                    ft.elapsed, metric.function_started.isoformat(), metric.function_ended.isoformat()
                 )
-                metrics_data.append(data)
+                jobs_data.append(data)
 
-            for name, section_list in metrics.looped_sections.items():
-                for i, section in enumerate(section_list):
+                for name, section in metric.sections.items():
                     data = (
-                        job.job_id, metrics.call_id, name, i,
+                        job.job_id, call_id, name, None,
                         section.elapsed
                     )
                     metrics_data.append(data)
+
+                for name, section_list in metric.looped_sections.items():
+                    for i, section in enumerate(section_list):
+                        data = (
+                            job.job_id, call_id, name, i,
+                            section.elapsed
+                        )
+                        metrics_data.append(data)
 
         self.csv_write(jobs_data, results_location, CSV_FORMAT_JOBS)
         self.csv_write(metrics_data, results_location, CSV_FORMAT_SECTIONS)

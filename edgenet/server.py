@@ -39,6 +39,12 @@ class EdgeNetServer:
 
         return result
 
+    def send_terminate_external(self, session_id):
+        loop = asyncio.get_event_loop()
+        result = loop.run_until_complete(self.send_terminate(session_id))
+
+        return result
+
     async def serve(self, stop=asyncio.Future()):
         # Main server loop
         async with websockets.serve(self.handler, self.hostname, self.port, ping_timeout=SERVER_PING_TIMEOUT):
@@ -72,7 +78,7 @@ class EdgeNetServer:
             if message.msg_type == MSG_METRICS:
                 # Register Timer object to our job
                 timer_obj = Timer.create_from_dict(message.metrics)
-                self.jobs[message.job_id].metrics = timer_obj
+                self.jobs[message.job_id].register_metrics(timer_obj)
 
     async def send_message(self, session_id, message: EdgeNetMessage):
         msg_dict = {
@@ -106,6 +112,17 @@ class EdgeNetServer:
 
         # Return the job object
         return job
+
+    async def send_terminate(self, session_id):
+        # Create the termination message and send it
+        term_message = EdgeNetMessage.create_terminate_message(session_id)
+        await self.send_message(session_id, term_message)
+
+        logging.debug(f"Terminate message for session ID:[{session_id[-12:]}] has been sent.")
+
+        self.sessions[session_id].terminate()
+
+        return self.sessions[session_id]
 
     def sleep(self, seconds):
         # Sleep call used for testing

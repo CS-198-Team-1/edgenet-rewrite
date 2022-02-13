@@ -49,3 +49,7 @@ class EdgeNetMessage:
         return cls(
             session_id, MSG_FINISH, job_id=job_id, 
         )
+
+    @classmethod
+    def create_terminate_message(cls, session_id):
+        return cls(session_id, MSG_TERMINATE)
