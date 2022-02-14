@@ -8,7 +8,7 @@ from metrics.experiment import Experiment
 CLOUD_ONLY_TIMES = 10
 
 # Initialize server
-server = EdgeNetServer(SERVER_HOSTNAME, SERVER_PORT)
+server = EdgeNetServer("0.0.0.0", SERVER_PORT)
 
 # Run server
 server_thread = threading.Thread(target=server.run, daemon=True)

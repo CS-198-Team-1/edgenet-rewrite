@@ -8,7 +8,7 @@ from metrics.experiment import Experiment
 experiment = Experiment("legacy.edge_only")
 
 # Initialize server
-server = EdgeNetServer(SERVER_HOSTNAME, SERVER_PORT)
+server = EdgeNetServer("0.0.0.0", SERVER_PORT)
 
 # Run server
 server_thread = threading.Thread(target=server.run, daemon=True)

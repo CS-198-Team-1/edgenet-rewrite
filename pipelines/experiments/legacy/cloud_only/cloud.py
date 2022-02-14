@@ -5,7 +5,7 @@ from .functions import *
 from metrics.experiment import Experiment
 
 # Initialize server
-server = EdgeNetServer(SERVER_HOSTNAME, SERVER_PORT)
+server = EdgeNetServer("0.0.0.0", SERVER_PORT)
 
 # Start RTSP server
 rtsp_server = subprocess.Popen(
