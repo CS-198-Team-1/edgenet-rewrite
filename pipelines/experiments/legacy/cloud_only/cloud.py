@@ -44,7 +44,7 @@ job = server.send_command_external(
     is_polling=True
 )
 
-cloud_metrics, job.results = capture_video(f"rtsp://0.0.0.0/{session_id}")
+cloud_metrics, job.results = capture_video(f"rtsp://0.0.0.0:8554/{session_id}")
 
 # Append job to experiment container
 experiment.jobs.append(job) # TODO: Figure out how to extract metrics from cloud-only function
