@@ -1,5 +1,6 @@
 import re, datetime, cv2, easyocr, numpy as np, tensorflow as tf, subprocess
 import sys, socket, time
+from edgenet.job import EdgeNetJobResult
 from gpx import uses_gpx
 from metrics.time import uses_timer, Timer
 from .constants import *
@@ -27,7 +28,7 @@ def start_streaming(timer, sender, video_path, stream_to_url):
 
 @uses_timer
 @uses_gpx(GPX_PATH)
-def capture_video(gpxc, timer, stream_url, frames_per_second=15, target="all"):
+def capture_video(gpxc, timer, stream_url, frames_per_second=15, target="all", results_list=[]):
     # OpenCV initialization
     timer.start_section("cloud-initialization")
 
@@ -114,7 +115,8 @@ def capture_video(gpxc, timer, stream_url, frames_per_second=15, target="all"):
                 time_captured = start_time + delta
 
                 execute_text_recognition(
-                    gpxc, boxes[0][i], frame, confidence, time_captured
+                    gpxc, boxes[0][i], frame, confidence, time_captured,
+                    results_list=results_list
                 )
                 timer.end_looped_section("cloud-plate-recognition")
 
@@ -129,7 +131,7 @@ def capture_video(gpxc, timer, stream_url, frames_per_second=15, target="all"):
     timer.pickle("legacy-cloud-only.pickle")
 
 
-def execute_text_recognition(gpxc, boxes, frame, confidence, time_captured):
+def execute_text_recognition(gpxc, boxes, frame, confidence, time_captured, results_list=[]):
     x1, x2, y1, y2 = boxes[1], boxes[3], boxes[0], boxes[2]
     save_frame = frame[
         max( 0, int(y1*1079) ) : min( 1079, int(y2*1079) ),
@@ -170,6 +172,10 @@ def execute_text_recognition(gpxc, boxes, frame, confidence, time_captured):
         "lat": lat,
         "lng": lng,
     }
+
+    job_result = EdgeNetJobResult("cloud", result, None, None)
+
+    results_list.append(job_result)
 
 
 class LPRException(Exception): pass

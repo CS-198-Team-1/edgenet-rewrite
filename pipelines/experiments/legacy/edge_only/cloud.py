@@ -41,6 +41,7 @@ experiment.jobs.append(job)
 # If this is not included, script will terminate immediately!
 job.wait_until_finished()
 job.wait_for_metrics()
+job.results_to_csv()
 
 # Terminate client
 server.send_terminate_external(session_id)

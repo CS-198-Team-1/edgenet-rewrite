@@ -1,5 +1,6 @@
 import datetime, uuid, csv
 from .constants import CSV_FORMAT_EXPERIMENT, CSV_FORMAT_JOBS, CSV_FORMAT_SECTIONS, CSV_RESULTS_LOCATION
+from edgenet.job import EdgeNetJobResult
 
 
 class Experiment:
@@ -32,6 +33,8 @@ class Experiment:
         jobs_data = []
         metrics_data = []
         for job in self.jobs:
+            if not len(job.metrics): continue # No metrics
+
             data = (
                 self.experiment_id, job.job_id, job.function_name,
                 job.elapsed, job.job_started.isoformat(), job.job_ended.isoformat()

@@ -37,6 +37,7 @@ for i in range(10):
     server.sleep(0.2)
     expected_result = add_three_numbers(a, b, c)
     logging.info(f"Expected result: {expected_result}, received: {job.raw_results[0]}")
+    experiment.jobs.append(job)
 
 # Set up callback for cloud-only computation
 def callback(job_result):
@@ -60,6 +61,8 @@ job.wait_for_metrics()
 # End experiment and record metrics
 experiment.end_experiment()
 experiment.to_csv()
+for j in experiment.jobs:
+    j.results_to_csv()
 
 # Terminate client
 server.send_terminate_external(session_id)

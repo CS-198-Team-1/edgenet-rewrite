@@ -19,3 +19,7 @@ MSG_RESULT       = "RESULT"
 MSG_FINISH       = "FINISH"
 MSG_METRICS      = "METRICS"
 MSG_TERMINATE    = "TERMINATE"
+
+# Job results location
+CSV_RESULTS_LOCATION   = "experiment-results/"
+CSV_FORMAT_JOB_RESULTS = ".results.csv"

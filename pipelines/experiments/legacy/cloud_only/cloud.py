@@ -33,8 +33,8 @@ logging.info("Running cloud-only execution...")
 rtsp_url = f"{RTSP_URL}/{session_id}"
 
 # Start capturing the stream
-metrics_container = {}
-cap_thread = threading.Thread(target=capture_video, args=[rtsp_url])
+r_list = []
+cap_thread = threading.Thread(target=capture_video, args=[rtsp_url], kwargs={"results_list": r_list})
 cap_thread.start()
 
 # Send command to start publishing the video:
@@ -54,12 +54,14 @@ job.wait_for_metrics()
 # Get results from the cloud side, and delete pickle
 cloud_metrics = Timer.wait_for_and_consume_pickle("legacy-cloud-only.pickle")
 
-# Add cloud metrics
+# Add cloud metrics and results
 job.register_metrics(cloud_metrics)
+job.results = r_list
 
 # Record results
 experiment.end_experiment()
 experiment.to_csv()
+job.results_to_csv()
 
 # Clean up
 cap_thread.join()

@@ -1,4 +1,4 @@
-import asyncio, time
+import time, csv
 from datetime import datetime
 from .constants import *
 from .message import EdgeNetMessage
@@ -75,6 +75,13 @@ class EdgeNetJob:
 
     def wait_for_metrics(self, number_of_metrics=1):
         while len(self.metrics) != number_of_metrics: time.sleep(0.01) # TODO: Improve this spin lock
+
+    def results_to_csv(self):
+        data = [(self.job_id, str(r.result), r.session_id, r.sent_dttm, r.recv_dttm) for r in self.results]
+
+        with open(f"{CSV_RESULTS_LOCATION}{self.job_id}{CSV_FORMAT_JOB_RESULTS}", "a+") as fp:
+            writer = csv.writer(fp, delimiter=",")
+            writer.writerows(data)
 
 
 class EdgeNetJobResult:
