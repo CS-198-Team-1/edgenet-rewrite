@@ -1,6 +1,7 @@
 import re, datetime, cv2, easyocr, numpy as np, tensorflow as tf, subprocess
+import sys, socket, time
 from gpx import uses_gpx
-from metrics.time import uses_timer
+from metrics.time import uses_timer, Timer
 from .constants import *
 from config import *
 
@@ -30,7 +31,22 @@ def capture_video(gpxc, timer, stream_url, frames_per_second=15, target="all"):
     # OpenCV initialization
     timer.start_section("initialization")
 
-    cap = cv2.VideoCapture(stream_url)
+    while True:
+        cap = cv2.VideoCapture(stream_url)
+        try:   
+            # Check if camera opened successfully
+            if (cap.isOpened()== True): 
+                print("[INFO] FOUND! Stream Link...")
+                break
+            # Else is important to display error message on the screen if can.isOpened returns false
+            else:
+                print("[NO STREAM1]")
+        except socket.error:
+            print("[NO STREAM2]")
+        except:
+            print("[FAILED]")
+        time.sleep(0.001)
+
     interpreter = tf.lite.Interpreter(model_path=MODEL_PATH)
     interpreter.allocate_tensors()
 
@@ -109,6 +125,9 @@ def capture_video(gpxc, timer, stream_url, frames_per_second=15, target="all"):
 
     timer.end_function() # Record end of whole function
 
+    # Pickle results
+    timer.pickle("legacy-cloud-only.pickle")
+
 
 def execute_text_recognition(gpxc, boxes, frame, confidence, time_captured):
     x1, x2, y1, y2 = boxes[1], boxes[3], boxes[0], boxes[2]
@@ -154,3 +173,7 @@ def execute_text_recognition(gpxc, boxes, frame, confidence, time_captured):
 
 
 class LPRException(Exception): pass
+
+
+if __name__ == "__main__":
+    capture_video(sys.argv[1])

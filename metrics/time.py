@@ -1,6 +1,7 @@
-import time, uuid, datetime
+import time, uuid, datetime, pickle, os
 from dateutil.parser import parse as dttm_parse
 from config import *
+from metrics.constants import PICKLE_LOCATION
 
 
 class Timer:
@@ -85,6 +86,30 @@ class Timer:
         json_dict["function_ended"]   = self.function_ended.isoformat()
 
         return json_dict
+
+    def pickle(self, filename):
+        with open(Timer.get_pickle_url(filename), "wb") as f:
+            pickle.dump(self, f, protocol=pickle.HIGHEST_PROTOCOL)
+
+    @staticmethod
+    def unpickle(filename):
+        with open(Timer.get_pickle_url(filename), "rb") as f:
+            return pickle.load(f)
+
+    @staticmethod
+    def consume_pickle(filename):
+        result = Timer.unpickle(filename)
+        os.remove(Timer.get_pickle_url(filename))
+        return result
+
+    @staticmethod
+    def wait_for_and_consume_pickle(filename):
+        while not os.path.exists(Timer.get_pickle_url(filename)):
+            time.sleep(0.01)
+        return Timer.consume_pickle(filename)
+
+    @staticmethod
+    def get_pickle_url(filename): return f"{PICKLE_LOCATION}{filename}"
 
     @classmethod
     def create_from_dict(cls, raw_dict):

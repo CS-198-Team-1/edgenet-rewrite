@@ -2,11 +2,10 @@ import threading
 from edgenet.server import EdgeNetServer
 from config import *
 from .functions import *
+from metrics.time import Timer
 from metrics.experiment import Experiment
 
 CLOUD_ONLY_TIMES = 10
-
-experiment = Experiment("examples.simple")
 
 # Initialize server
 server = EdgeNetServer(SERVER_HOSTNAME, SERVER_PORT)
@@ -18,6 +17,9 @@ server_thread.start()
 # Wait for 5 seconds for client to connect:
 logging.info("Waiting for five seconds for client to connect...")
 server.sleep(5)
+
+# Start experiment after the sleep
+experiment = Experiment("examples.simple")
 
 # Client should be the first in the session dict:
 session_id = [*server.sessions][0]
@@ -55,9 +57,9 @@ experiment.jobs.append(job)
 job.wait_until_finished()
 job.wait_for_metrics()
 
-# Terminate client
-server.send_terminate_external(session_id)
-
 # End experiment and record metrics
 experiment.end_experiment()
 experiment.to_csv()
+
+# Terminate client
+server.send_terminate_external(session_id)

@@ -1,14 +1,18 @@
-import threading, time
+import threading, subprocess
 from edgenet.server import EdgeNetServer
 from config import *
 from .functions import *
 from metrics.experiment import Experiment
 
-# Initialize experiment
-experiment = Experiment("legacy.edge_only")
-
 # Initialize server
 server = EdgeNetServer(SERVER_HOSTNAME, SERVER_PORT)
+
+# Start RTSP server
+rtsp_server = subprocess.Popen(
+    [f"./bin/{SYSTEM_ARCH}/rtsp-simple-server"], 
+    stdout=subprocess.DEVNULL,
+    stderr=subprocess.DEVNULL,
+)
 
 # Run server
 server_thread = threading.Thread(target=server.run, daemon=True)
@@ -18,6 +22,9 @@ server_thread.start()
 logging.info("Waiting for five seconds for client to connect...")
 server.sleep(5)
 
+# Initialize experiment after sleep
+experiment = Experiment("legacy.edge_only")
+
 # Client should be the first in the session dict:
 session_id = [*server.sessions][0]
 
@@ -25,27 +32,36 @@ logging.info("Running cloud-only execution...")
 
 rtsp_url = f"{RTSP_URL}/{session_id}"
 
-# Send command to start capturing the video:
+# Start capturing the stream
+metrics_container = {}
+cap_thread = threading.Thread(target=capture_video, args=[rtsp_url])
+cap_thread.start()
+
+# Send command to start publishing the video:
 job = server.send_command_external(
     session_id, EDGE_FUNCTION_NAME,
     EXPERIMENT_VIDEO_PATH, rtsp_url,
     is_polling=True
 )
+
 # Append job to experiment container
 experiment.jobs.append(job) # TODO: Figure out how to extract metrics from cloud-only function
 
-time.sleep(1) # TODO: Figure out how to read as soon as stream is published
-
-capture_video(rtsp_url)
-
 # Wait until job is finished, then terminate
-# If this is not included, script will terminate immediately!
 job.wait_until_finished()
 job.wait_for_metrics()
 
-# Terminate client
-server.send_terminate_external(session_id)
+# Get results from the cloud side, and delete pickle
+cloud_metrics = Timer.wait_for_and_consume_pickle("legacy-cloud-only.pickle")
+
+# Add cloud metrics
+job.register_metrics(cloud_metrics)
 
 # Record results
 experiment.end_experiment()
 experiment.to_csv()
+
+# Clean up
+cap_thread.join()
+rtsp_server.terminate()
+server.send_terminate_external(session_id)
