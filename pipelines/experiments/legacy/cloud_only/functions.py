@@ -13,7 +13,7 @@ lph_pattern = re.compile("^[A-Z][A-Z][A-Z][0-9][0-9][0-9][0-9]?$")
 
 @uses_timer
 def start_streaming(timer, sender, video_path, stream_to_url):
-    time.sleep(0.05)
+    time.sleep(2.05)
     args = [
         "ffmpeg", "-re", "-i", video_path, 
         "-c", "copy", "-f", "rtsp", 
