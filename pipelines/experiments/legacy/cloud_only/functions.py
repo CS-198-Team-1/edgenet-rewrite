@@ -18,9 +18,9 @@ def start_streaming(timer, sender, video_path, stream_to_url):
         "-rtsp_transport", "tcp", stream_to_url,
     ]
 
-    timer.start_section("stream")
+    timer.start_section("edge-stream")
     subprocess.call(args)
-    timer.end_section("stream")
+    timer.end_section("edge-stream")
 
     timer.end_function()
     sender.send_metrics(timer)
@@ -29,7 +29,7 @@ def start_streaming(timer, sender, video_path, stream_to_url):
 @uses_gpx(GPX_PATH)
 def capture_video(gpxc, timer, stream_url, frames_per_second=15, target="all"):
     # OpenCV initialization
-    timer.start_section("initialization")
+    timer.start_section("cloud-initialization")
 
     while True:
         cap = cv2.VideoCapture(stream_url)
@@ -59,7 +59,7 @@ def capture_video(gpxc, timer, stream_url, frames_per_second=15, target="all"):
 
     print(start_time.isoformat(), gpxc.start_time.isoformat())
 
-    timer.end_section("initialization")
+    timer.end_section("cloud-initialization")
 
     while cap.isOpened():
 
@@ -76,7 +76,7 @@ def capture_video(gpxc, timer, stream_url, frames_per_second=15, target="all"):
 
         logging.info("[{:06d}][{}fps] Processing frames...".format(frame_counter, frames_per_second))
 
-        timer.start_looped_section("plate-detection")
+        timer.start_looped_section("cloud-plate-detection")
 
         # Execute detection:
         # -- Resize frame to 320x320 square
@@ -101,12 +101,12 @@ def capture_video(gpxc, timer, stream_url, frames_per_second=15, target="all"):
         # Bounding boxes
         boxes = interpreter.get_tensor(output_details[1]['index'])
 
-        timer.end_looped_section("plate-detection")
+        timer.end_looped_section("cloud-plate-detection")
 
         # For index and confidence value of the first class [0]
         for i, confidence in enumerate(output_data[0]):
             if confidence > BASE_CONFIDENCE:
-                timer.start_looped_section("plate-recognition")
+                timer.start_looped_section("cloud-plate-recognition")
 
                 # Get exact time captured based on frame # and FPS
                 seconds_elapsed = frame_counter / float(VIDEO_FPS)
@@ -116,7 +116,7 @@ def capture_video(gpxc, timer, stream_url, frames_per_second=15, target="all"):
                 execute_text_recognition(
                     gpxc, boxes[0][i], frame, confidence, time_captured
                 )
-                timer.end_looped_section("plate-recognition")
+                timer.end_looped_section("cloud-plate-recognition")
 
     logging.info("End of video detected. Ending execution...")
     # Release capturing

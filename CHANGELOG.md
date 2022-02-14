@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - New entry in configuration file `TERMINATE_CLIENTS_ON_RECEIVE` that dictates if the client process is killed through `os.kill` if a termination message is received.
 - New `Job.register_metrics` command that properly adds a new `Timer` object to its `.metrics` dictionary and modifies its current.
 - New `Job.elapsed`, `Job.job_started`, and `Job.job_ended` property functions that now consolidate data from all of its Timer objects under `.metrics`.
+- New functions in `Timer` that can help pickle and unpickle its instances to ease transmission of metrics.
 
 ### Changed
 - `Job.metrics` is now a dictionary of function call IDs and their `Timer` objects, instead of the original one-to-one correspondence of the previous implementation.
