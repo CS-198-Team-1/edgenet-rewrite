@@ -13,6 +13,7 @@ lph_pattern = re.compile("^[A-Z][A-Z][A-Z][0-9][0-9][0-9][0-9]?$")
 
 @uses_timer
 def start_streaming(timer, sender, video_path, stream_to_url):
+    time.sleep(0.05)
     args = [
         "ffmpeg", "-re", "-i", video_path, 
         "-c", "copy", "-f", "rtsp", 
@@ -127,8 +128,9 @@ def capture_video(gpxc, timer, stream_url, frames_per_second=15, target="all", r
 
     timer.end_function() # Record end of whole function
 
-    # Pickle results
-    timer.pickle("legacy-cloud-only.pickle")
+    # # Pickle results
+    # timer.pickle("legacy-cloud-only.pickle")
+    return timer, results_list
 
 
 def execute_text_recognition(gpxc, boxes, frame, confidence, time_captured, results_list=[]):
