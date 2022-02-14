@@ -9,7 +9,7 @@ from config import *
 
 
 class EdgeNetServer:
-    def __init__(self, hostname, port):
+    def __init__(self, hostname="0.0.0.0", port=8888):
         self.hostname   = hostname
         self.port       = port
         self.is_running = True
