@@ -84,12 +84,7 @@ def capture_video(gpxc, timer, sender, video_path, frames_per_second=15, target=
         # For index and confidence value of the first class [0]
         for i, confidence in enumerate(output_data[0]):
             if confidence > BASE_CONFIDENCE:
-<<<<<<< HEAD:pipelines/experiments/edge_only/functions.py
-                execute_text_recognition_tflite(
-                    send_result, gpxc, 
-                    boxes[0][i], frame, confidence,
-                    recog_interpreter,recog_input_details,recog_output_details
-=======
+
                 timer.start_looped_section("edge-plate-recognition")
 
                 # Get exact time captured based on frame # and FPS
@@ -100,7 +95,6 @@ def capture_video(gpxc, timer, sender, video_path, frames_per_second=15, target=
                 execute_text_recognition(
                     sender, gpxc, 
                     boxes[0][i], frame, confidence, time_captured
->>>>>>> origin/master:pipelines/experiments/legacy/edge_only/functions.py
                 )
                 timer.end_looped_section("edge-plate-recognition")
 
