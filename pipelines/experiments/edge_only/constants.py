@@ -9,6 +9,7 @@ CAPTURE_FPS  = 15
 BASE_CONFIDENCE = 0.3
 
 MODEL_PATH = "tensorflow/detect4ph.tflite"
+RECOG_MODEL_PATH = "tensorflow/depthwise_model_randomchars_perspective_tflite.tflite"
 GPX_PATH = "experiment-files/exp_1.gpx"
 
 ALLOWED_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0987654321 "
