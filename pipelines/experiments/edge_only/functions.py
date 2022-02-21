@@ -4,6 +4,10 @@ from metrics.time import uses_timer
 from .constants import *
 from config import *
 
+CHARS = "ABCDEFGHIJKLMNPQRSTUVWXYZ0123456789" # exclude I, O
+CHARS_DICT = {char:i for i, char in enumerate(CHARS)}
+DECODE_DICT = {i:char for i, char in enumerate(CHARS)}
+
 
 # License plate pattern for PH plates
 lph_pattern = re.compile("^[A-Z][A-Z][A-Z][0-9][0-9][0-9][0-9]?$")
@@ -19,10 +23,15 @@ def capture_video(gpxc, timer, sender, video_path, frames_per_second=15, target=
     cap = cv2.VideoCapture(video_path)
     interpreter = tf.lite.Interpreter(model_path=MODEL_PATH)
     interpreter.allocate_tensors()
-    reader = easyocr.Reader(["en"])
+
+    recog_interpreter = tf.lite.Interpreter(model_path=RECOG_MODEL_PATH)
+    recog_interpreter.allocate_tensors()
 
     input_details = interpreter.get_input_details()
     output_details = interpreter.get_output_details()
+
+    recog_input_details = recog_interpreter.get_input_details()
+    recog_output_details = recog_interpreter.get_output_details()
 
     frame_counter = 0 # Frame counter
     every_n_frames = VIDEO_FPS // frames_per_second # Check every n frames
@@ -85,7 +94,6 @@ def capture_video(gpxc, timer, sender, video_path, frames_per_second=15, target=
         # For index and confidence value of the first class [0]
         for i, confidence in enumerate(output_data[0]):
             if confidence > BASE_CONFIDENCE:
-
                 timer.start_looped_section("edge-plate-recognition")
 
                 # Get exact time captured based on frame # and FPS
@@ -93,9 +101,10 @@ def capture_video(gpxc, timer, sender, video_path, frames_per_second=15, target=
                 delta = datetime.timedelta(seconds=seconds_elapsed)
                 time_captured = start_time + delta
 
-                execute_text_recognition(
-                    reader, sender, gpxc, 
-                    boxes[0][i], frame, confidence, time_captured
+                execute_text_recognition_tflite(
+                    sender, gpxc, 
+                    boxes[0][i], frame, confidence,
+                    recog_interpreter,recog_input_details,recog_output_details
                 )
                 timer.end_looped_section("edge-plate-recognition")
 
@@ -108,7 +117,7 @@ def capture_video(gpxc, timer, sender, video_path, frames_per_second=15, target=
     sender.send_metrics(timer) # Send metrics to cloud
 
 
-def execute_text_recognition(reader, sender, gpxc, boxes, frame, confidence, time_captured):
+def execute_text_recognition_tflite(sender, gpxc, boxes, frame, confidence, interpreter, input_details, output_details):
     x1, x2, y1, y2 = boxes[1], boxes[3], boxes[0], boxes[2]
     save_frame = frame[
         max( 0, int(y1*1079) ) : min( 1079, int(y2*1079) ),
@@ -117,37 +126,39 @@ def execute_text_recognition(reader, sender, gpxc, boxes, frame, confidence, tim
     confidence_in_100 = int( confidence * 100 )
 
     # Execute text recognition
-    text = reader.readtext(save_frame, allowlist=ALLOWED_CHARS)
 
+    test_image = cv2.resize(save_frame,(94,24))/256
+    test_image = np.expand_dims(test_image,axis=0)
+    test_image = test_image.astype(np.float32)
+    interpreter.set_tensor(input_details[0]['index'], test_image)
+    interpreter.invoke()
+    output_data = interpreter.get_tensor(output_details[0]['index'])
+    decoded = tf.keras.backend.ctc_decode(output_data,(24,),greedy=False)
+    text = ""
+    for i in np.array(decoded[0]).reshape(24):
+        if i >-1:
+            text += DECODE_DICT[i]
     # Do nothing if text is empty
     if not len(text): return 
-
-    # Preprocess plate text
-    license_plate = text[0][1].upper()
-    license_plate = license_plate.replace(" ", "")
-
-    # Check if license plate matches pattern
-    license_plate = text[0][1].upper()
-    license_plate = license_plate.replace(" ", "")
+    license_plate = text
+    text[:3].replace("0",'O')
 
     # Do nothing if not a valid plate number
     if not lph_pattern.match(license_plate): return 
 
     # A matching license plate is now found!
     time_now = datetime.datetime.now().replace(tzinfo=None)
-    gpx_entry = gpxc.get_latest_entry(time_captured)
+    gpx_entry = gpxc.get_latest_entry(time_now)
     lat, lng = gpx_entry.latlng
     
-    logging.info(f"License plate found! {license_plate} ({lat}, {lng})")
+    print(f"License plate found! {license_plate} ({lat}, {lng})")
 
     # Send result to cloud
     sender.send_result({
         "time_now": time_now.isoformat(),
-        "time_captured": time_captured.isoformat(),
         "plate": license_plate,
         "lat": lat,
         "lng": lng,
     })
-
 
 class LPRException(Exception): pass
