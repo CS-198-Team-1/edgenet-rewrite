@@ -16,7 +16,7 @@ class NetworkMonitor:
         self.packets = None
 
     @property
-    def result_location(self): return f"{TSHARK_RESULTS_LOCATION}/{self.experiment_id}.{self.interface}.pcap"
+    def result_location(self): return f"{TSHARK_RESULTS_LOCATION}{self.experiment_id}.{self.interface}.pcap"
 
     def start_capturing(self):
         if self.process:
