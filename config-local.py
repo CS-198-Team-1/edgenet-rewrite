@@ -17,6 +17,9 @@ TERMINATE_CLIENTS_ON_RECEIVE = True
 RTSP_PORT = 8554 # See rtsp-simple-server.yml:107 to change RTMP port as well.
 RTSP_URL = f"rtsp://{SERVER_HOSTNAME}:{RTSP_PORT}"
 
+# Network metrics config
+NET_INTERFACE = "eth0"
+
 # Logging config
 LOGGING_LEVEL       = logging.INFO
 LOGGING_FORMAT      = "[%(asctime)s] %(levelname)-8s %(message)s"

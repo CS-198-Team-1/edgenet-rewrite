@@ -3,6 +3,7 @@ from edgenet.server import EdgeNetServer
 from config import *
 from .functions import *
 from metrics.experiment import Experiment
+from metrics.network import NetworkMonitor
 
 # Initialize server
 server = EdgeNetServer("0.0.0.0", SERVER_PORT)
@@ -22,8 +23,10 @@ server_thread.start()
 logging.info("Waiting for five seconds for client to connect...")
 server.sleep(5)
 
-# Initialize experiment after sleep
+# Initialize experiment and bandwidth monitoring after sleep
 experiment = Experiment("legacy.edge_only")
+nmonitor = NetworkMonitor("lo", experiment.experiment_id)
+nmonitor.start_capturing()
 
 # Client should be the first in the session dict:
 session_id = [*server.sessions][0]
@@ -60,12 +63,20 @@ job.wait_for_metrics()
 job.register_metrics(cloud_metrics)
 # job.results = r_list
 
-# Record results
-experiment.end_experiment()
-experiment.to_csv()
-job.results_to_csv()
-
 # Clean up
 # cap_thread.join()
 rtsp_server.terminate()
 server.send_terminate_external(session_id)
+
+# Record results
+experiment.end_experiment()
+nmonitor.stop_capturing()
+experiment.to_csv()
+job.results_to_csv()
+
+# Display bandwidth usage
+websocket_usage = nmonitor.get_all_packet_size_tcp(SERVER_PORT)
+rtsp_usage = nmonitor.get_all_packet_size_tcp(RTSP_PORT)
+
+logging.info(f"Total bytes through websockets: {websocket_usage}")
+logging.info(f"Total bytes through RTSP: {rtsp_usage}")
