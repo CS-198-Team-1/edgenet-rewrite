@@ -43,6 +43,8 @@ def capture_video(gpxc, timer, sender, video_path, frames_per_second=15, target=
 
     while cap.isOpened():
 
+        timer.start_looped_section("edge-opencv-read")
+
         frame_counter += 1
 
         if frame_counter % VIDEO_FPS == 0:
@@ -61,6 +63,8 @@ def capture_video(gpxc, timer, sender, video_path, frames_per_second=15, target=
         if not ret or frame is None:
             # raise LPRException("cap.read() returned invalid values!")
             break # Execution is finished
+        
+        timer.end_looped_section("edge-opencv-read")
 
         logging.info("[{:06d}][{}fps] Processing frames...".format(frame_counter, frames_per_second))
 
