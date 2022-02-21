@@ -19,6 +19,7 @@ def capture_video(gpxc, timer, sender, video_path, frames_per_second=15, target=
     cap = cv2.VideoCapture(video_path)
     interpreter = tf.lite.Interpreter(model_path=MODEL_PATH)
     interpreter.allocate_tensors()
+    reader = easyocr.Reader(["en"])
 
     input_details = interpreter.get_input_details()
     output_details = interpreter.get_output_details()
@@ -93,7 +94,7 @@ def capture_video(gpxc, timer, sender, video_path, frames_per_second=15, target=
                 time_captured = start_time + delta
 
                 execute_text_recognition(
-                    sender, gpxc, 
+                    reader, sender, gpxc, 
                     boxes[0][i], frame, confidence, time_captured
                 )
                 timer.end_looped_section("edge-plate-recognition")
@@ -107,16 +108,15 @@ def capture_video(gpxc, timer, sender, video_path, frames_per_second=15, target=
     sender.send_metrics(timer) # Send metrics to cloud
 
 
-def execute_text_recognition(sender, gpxc, boxes, frame, confidence, time_captured):
+def execute_text_recognition(reader, sender, gpxc, boxes, frame, confidence, time_captured):
     x1, x2, y1, y2 = boxes[1], boxes[3], boxes[0], boxes[2]
     save_frame = frame[
         max( 0, int(y1*1079) ) : min( 1079, int(y2*1079) ),
-        max( 0, int(x1*1920) ) : min( 1079, int(x2*1920) )
+        max( 0, int(x1*1920) ) : min( 1920, int(x2*1920) )
     ]
     confidence_in_100 = int( confidence * 100 )
 
     # Execute text recognition
-    reader = easyocr.Reader(["en"])
     text = reader.readtext(save_frame, allowlist=ALLOWED_CHARS)
 
     # Do nothing if text is empty
