@@ -5,7 +5,7 @@ from .functions import *
 from metrics.experiment import Experiment
 
 # Initialize experiment
-experiment = Experiment("legacy.edge_only")
+experiment = Experiment("edge_only")
 
 # Initialize server
 server = EdgeNetServer("0.0.0.0", SERVER_PORT)
