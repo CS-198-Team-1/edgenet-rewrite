@@ -65,6 +65,8 @@ def capture_video(gpxc, timer, stream_url, frames_per_second=15, target="all", r
 
     while cap.isOpened():
 
+        timer.start_looped_section("cloud-opencv-read")
+
         frame_counter += 1
 
         if frame_counter % every_n_frames != 0:
@@ -75,6 +77,8 @@ def capture_video(gpxc, timer, stream_url, frames_per_second=15, target="all", r
         if not ret or frame is None:
             # raise LPRException("cap.read() returned invalid values!")
             break # Execution is finished
+
+        timer.end_looped_section("cloud-opencv-read")
 
         logging.info("[{:06d}][{}fps] Processing frames...".format(frame_counter, frames_per_second))
 
