@@ -1,4 +1,4 @@
-import asyncio
+import time, csv
 from datetime import datetime
 from .constants import *
 from .message import EdgeNetMessage
@@ -16,6 +16,7 @@ class EdgeNetJob:
         self.callback      = callback
 
         self.results = []
+        self.metrics = {} # Timer object here later
 
         # Spin lock for finishing a job
         self.finished = False
@@ -27,6 +28,18 @@ class EdgeNetJob:
     @property
     def raw_results(self):
         return [r.result for r in self.results]
+
+    @property
+    def job_started(self):
+        return min([ m.function_started for _, m in self.metrics.items() ])
+
+    @property
+    def job_ended(self):
+        return max([ m.function_ended for _, m in self.metrics.items() ])
+
+    @property
+    def elapsed(self):
+        return self.job_ended - self.job_started
 
     def create_command_message(self, target, is_polling):
         return EdgeNetMessage(
@@ -52,11 +65,23 @@ class EdgeNetJob:
         if self.callback:
             self.callback(new_result)
 
+    def register_metrics(self, timer_obj): self.metrics[timer_obj.call_id] = timer_obj
+
     def finish_job(self):
         self.finished = True
 
     def wait_until_finished(self):
-        while not self.finished: pass
+        while not self.finished: time.sleep(0.01) # TODO: Improve this spin lock
+
+    def wait_for_metrics(self, number_of_metrics=1):
+        while len(self.metrics) != number_of_metrics: time.sleep(0.01) # TODO: Improve this spin lock
+
+    def results_to_csv(self):
+        data = [(self.job_id, str(r.result), r.session_id, r.sent_dttm, r.recv_dttm) for r in self.results]
+
+        with open(f"{CSV_RESULTS_LOCATION}{self.job_id}{CSV_FORMAT_JOB_RESULTS}", "a+") as fp:
+            writer = csv.writer(fp, delimiter=",")
+            writer.writerows(data)
 
 
 class EdgeNetJobResult:
@@ -68,6 +93,12 @@ class EdgeNetJobResult:
         self.result     = result
         self.sent_dttm  = sent_dttm
         self.recv_dttm  = recv_dttm
+
+    @property
+    def args(self): return self.result["args"]
+
+    @property
+    def kwargs(self): return self.result["kwargs"]
 
 
 class EdgeNetJobException(Exception):

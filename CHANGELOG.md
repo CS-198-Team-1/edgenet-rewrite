@@ -5,13 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.3.0] - 2021-02-14
+### Added
+- New termination procedure that can be called out through the async coroutine `EdgeNetServer.send_teriminate` and its partner function `EdgeNetServer.send_terminate_external` that can kill the client process running on the edge.
+- New entry in configuration file `TERMINATE_CLIENTS_ON_RECEIVE` that dictates if the client process is killed through `os.kill` if a termination message is received.
+- New `Job.register_metrics` command that properly adds a new `Timer` object to its `.metrics` dictionary and modifies its current.
+- New `Job.elapsed`, `Job.job_started`, and `Job.job_ended` property functions that now consolidate data from all of its Timer objects under `.metrics`.
+- New functions in `Timer` that can help pickle and unpickle its instances to ease transmission of metrics.
+
+### Changed
+- `Job.metrics` is now a dictionary of function call IDs and their `Timer` objects, instead of the original one-to-one correspondence of the previous implementation.
+
+## [1.2.0] - 2021-02-12
 ### Added
 - New `callback` keyword argument for `EdgeNetServer.send_command` and `EdgeNetServer.send_command_external` that is called when a job result is received. The `EdgeNetJobResult` object associated with the result is passed to the function.
 - Full edge-only implementation of the LPR pipeline is now at `pipelines.experiments.edge_only`.
 - New function `EdgeNetJob.wait_until_finished` that will wait until a `MSG_FINISH` is received for the current job using a spin lock that checks a new attribute `EdgeNetJob.finished`.
+- New `Timer` and `TimerSection` classes can now record times taken to execute specific code blocks.
+- New `Experiment` class can process `Job` and associated `Timer` metrics to record to a CSV file.
+- `EdgeNetJob` now has a `.metrics` attribute that stores said `Timer` object.
+- `EdgeNetJob` now has a `.wait_for_metrics` function that will wait until the `.metrics` attribute is not `None`, using a spin lock.
 ### Changed
 - `is_polling` argument for `EdgeNetServer.send_command` and `EdgeNetServer.send_command_external` is now passable only as a *keyword*.
 - `sent_dttm` and `recv_dttm` for `EdgeNetJobResult` should now be all in ISO format.
+- `@EdgeNetServer.uses_sender` now sends an object with a collection of sending functions instead of a regular `send_result` function.
 
 ## [1.1.0] - 2021-02-10
 ### Added
