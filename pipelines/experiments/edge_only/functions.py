@@ -102,7 +102,7 @@ def capture_video(gpxc, timer, sender, video_path, frames_per_second=15, target=
                 time_captured = start_time + delta
 
                 execute_text_recognition_tflite(
-                    send_result, gpxc, 
+                    sender, gpxc, 
                     boxes[0][i], frame, confidence,
                     recog_interpreter,recog_input_details,recog_output_details
                 )
@@ -117,7 +117,7 @@ def capture_video(gpxc, timer, sender, video_path, frames_per_second=15, target=
     sender.send_metrics(timer) # Send metrics to cloud
 
 
-def execute_text_recognition_tflite(send_result, gpxc, boxes, frame, confidence, interpreter, input_details, output_details):
+def execute_text_recognition_tflite(sender, gpxc, boxes, frame, confidence, interpreter, input_details, output_details):
     x1, x2, y1, y2 = boxes[1], boxes[3], boxes[0], boxes[2]
     save_frame = frame[
         max( 0, int(y1*1079) ) : min( 1079, int(y2*1079) ),
@@ -154,7 +154,7 @@ def execute_text_recognition_tflite(send_result, gpxc, boxes, frame, confidence,
     print(f"License plate found! {license_plate} ({lat}, {lng})")
 
     # Send result to cloud
-    send_result({
+    sender.send_result({
         "time_now": time_now.isoformat(),
         "plate": license_plate,
         "lat": lat,
