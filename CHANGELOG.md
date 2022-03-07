@@ -5,6 +5,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+### Added
+- New default named parameter `job_id` in `EdgeNetServer.send_command` and `EdgeNetServer.send_command_external` to specify a named Job.
+
 ## [1.3.0] - 2021-02-14
 ### Added
 - New termination procedure that can be called out through the async coroutine `EdgeNetServer.send_teriminate` and its partner function `EdgeNetServer.send_terminate_external` that can kill the client process running on the edge.
