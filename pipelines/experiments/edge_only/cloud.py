@@ -3,12 +3,19 @@ from edgenet.server import EdgeNetServer
 from config import *
 from .functions import *
 from metrics.experiment import Experiment
+from metrics.network import NetworkMonitor
 
 # Initialize experiment
 experiment = Experiment("edge_only")
 
+# Initialize network monitor
+nmonitor = NetworkMonitor(NET_INTERFACE, experiment_id=experiment.experiment_id)
+
 # Initialize server
 server = EdgeNetServer("0.0.0.0", SERVER_PORT)
+
+# Start packet capture
+nmonitor.start_capturing()
 
 # Run server
 server_thread = threading.Thread(target=server.run, daemon=True)
@@ -40,11 +47,20 @@ experiment.jobs.append(job)
 # Wait until job is finished, then terminate
 # If this is not included, script will terminate immediately!
 job.wait_until_finished()
+
+# Stop packet capture
+nmonitor.stop_capturing()
+
+# Wait for metrics transmission
 job.wait_for_metrics()
 job.results_to_csv()
 
 # Terminate client
 server.send_terminate_external(session_id)
+
+# Get total number of bytes
+bytes_captured = nmonitor.get_all_packet_size_tcp(SERVER_PORT)
+logging.info(f"Total bytes captured: {bytes_captured}")
 
 # Record results
 experiment.end_experiment()

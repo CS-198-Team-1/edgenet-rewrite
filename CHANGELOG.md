@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
+- New `metrics.network.NetworkMonitor` class that handles `tshark` and packet analysis for bandwidth usage monitoring.
 - New default named parameter `job_id` in `EdgeNetServer.send_command` and `EdgeNetServer.send_command_external` to specify a named Job.
 
 ## [1.3.0] - 2021-02-14

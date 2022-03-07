@@ -47,7 +47,7 @@ class NetworkMonitor:
         logging.info(f"Getting total size of packets with src and dest port {tcp_port}")
 
         filtered_pkts = (
-            pkt for pkt in fcap if TCP in pkt and (
+            pkt for pkt in self.packets if TCP in pkt and (
                 pkt[TCP].sport == tcp_port or pkt[TCP].dport == tcp_port
             )
         )
