@@ -5,8 +5,14 @@ from .functions import *
 from metrics.experiment import Experiment
 from metrics.network import NetworkMonitor
 
+PIPELINE = "edge_only"
+EXPERIMENT_ID = "edge_only"
+NETEM_DELAYS = [
+    "100ms", "200ms"
+]
+
 # Initialize experiment
-experiment = Experiment("edge_only")
+experiment = Experiment(PIPELINE, experiment_id=EXPERIMENT_ID)
 
 # Initialize network monitor
 nmonitor = NetworkMonitor(NET_INTERFACE, experiment_id=experiment.experiment_id)
@@ -35,25 +41,25 @@ def callback(job_result):
 
 logging.info("Running edge-only execution...")
 
-# Send command to start capturing the video:
-job = server.send_command_external(
-    session_id, EDGE_ONLY_FUNCTION_NAME,
-    EXPERIMENT_VIDEO_PATH,
-    is_polling=True, callback=callback
-)
-# Append job to experiment container
-experiment.jobs.append(job)
+for delay in NETEM_DELAYS:
+    # Send command to start capturing the video:
+    job = server.send_command_external(
+        session_id, EDGE_ONLY_FUNCTION_NAME,
+        EXPERIMENT_VIDEO_PATH,
+        is_polling=True, callback=callback, job_id=f"{EXPERIMENT_ID}_{delay}",
+        frames_per_second=CAPTURE_FPS
+    )
+    # Append job to experiment container
+    experiment.jobs.append(job)
 
-# Wait until job is finished, then terminate
-# If this is not included, script will terminate immediately!
-job.wait_until_finished()
+    job.wait_until_finished()
+    
+    # Wait for metrics transmission
+    job.wait_for_metrics()
+    job.results_to_csv()
 
 # Stop packet capture
 nmonitor.stop_capturing()
-
-# Wait for metrics transmission
-job.wait_for_metrics()
-job.results_to_csv()
 
 # Terminate client
 server.send_terminate_external(session_id)

@@ -12,11 +12,36 @@ class NetworkMonitor:
         self.process = None
         self.captures = {}
 
+        self.delay = None
+
         # For scapy
         self.packets = None
 
     @property
     def result_location(self): return f"{TSHARK_RESULTS_LOCATION}{self.experiment_id}.{self.interface}.pcap"
+
+    def implement_delay(self, delay):
+        if self.delay:
+            raise NetworkMonitorException("Tried to implement a delay when there is already an existing one.")
+        
+        args = [
+            "tc", "qdisc", "add", "dev", self.interface,
+            "root", "netem", "delay", delay
+        ]
+        _p = subprocess.call(args)
+        
+        self.delay = delay
+    
+    def release_delay(self):
+        if not self.delay:
+            raise NetworkMonitorException("Attempted to release a delay that was never implemented.")
+
+        args = [
+            "tc", "qdisc", "del", "dev", self.interface
+        ]
+        _p = subprocess.call(args)
+
+        self.delay = None
 
     def start_capturing(self):
         if self.process:

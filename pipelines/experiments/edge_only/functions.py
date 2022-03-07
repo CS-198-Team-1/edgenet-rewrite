@@ -106,7 +106,8 @@ def capture_video(gpxc, timer, sender, video_path, frames_per_second=15, target=
                 execute_text_recognition_tflite(
                     sender, gpxc, 
                     boxes[0][i], frame, confidence,
-                    recog_interpreter,recog_input_details,recog_output_details
+                    recog_interpreter, recog_input_details, recog_output_details,
+                    frame_counter
                 )
                 timer.end_looped_section("edge-plate-recognition")
 
@@ -119,7 +120,7 @@ def capture_video(gpxc, timer, sender, video_path, frames_per_second=15, target=
     sender.send_metrics(timer) # Send metrics to cloud
 
 
-def execute_text_recognition_tflite(sender, gpxc, boxes, frame, confidence, interpreter, input_details, output_details):
+def execute_text_recognition_tflite(sender, gpxc, boxes, frame, confidence, interpreter, input_details, output_details, frame_counter):
     x1, x2, y1, y2 = boxes[1], boxes[3], boxes[0], boxes[2]
     save_frame = frame[
         max( 0, int(y1*1079) ) : min( 1079, int(y2*1079) ),
@@ -149,16 +150,26 @@ def execute_text_recognition_tflite(sender, gpxc, boxes, frame, confidence, inte
     if not lph_pattern.match(license_plate): return 
 
     # A matching license plate is now found!
+
+    # Get current time
     time_now = datetime.datetime.now().replace(tzinfo=None)
-    gpx_entry = gpxc.get_latest_entry(time_now)
+
+    # Get time plate was captured
+    seconds_elapsed = frame_counter / VIDEO_FPS
+    time_captured = gpxc.start_time + datetime.timedelta(seconds=seconds_elapsed)
+
+    # Get GPX entry
+    gpx_entry = gpxc.get_latest_entry(time_captured)
     lat, lng = gpx_entry.latlng
     
     print(f"License plate found! {license_plate} ({lat}, {lng})")
 
     # Send result to cloud
     sender.send_result({
-        "time_now": time_now.isoformat(),
+        "time_recognized": time_now.isoformat(),
+        "time_captured": time_captured.isoformat(),
         "plate": license_plate,
+        "confidence": confidence_in_100,
         "lat": lat,
         "lng": lng,
     })
