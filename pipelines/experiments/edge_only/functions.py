@@ -56,7 +56,9 @@ def capture_video(gpxc, timer, sender, video_path, frames_per_second=15, target=
         if frame_counter % every_n_frames != 0:
             continue # Only start execution every n frames
 
+        timer.start_looped_section("edge-frame-capture")
         ret, frame = cap.read() # Capture each frame of video
+        timer.end_looped_section("edge-frame-capture")
 
         if not ret or frame is None:
             # raise LPRException("cap.read() returned invalid values!")
