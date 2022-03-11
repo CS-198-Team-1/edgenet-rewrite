@@ -76,37 +76,80 @@ class EdgeNetClient:
             logging.debug("Message received from server!")
             message = EdgeNetMessage.create_from_json(msg)
 
-            # If message is a command from the server:
-            if message.msg_type == MSG_COMMAND:
-                logging.debug(f"Message is of COMMAND type, running function with name [{message.function_name}] with job ID:[{message.job_id[-12:]}]")
-
-                function_call = self.get_function(message.function_name)
-                result = function_call(*message.args, **message.kwargs)
-                
-                logging.debug(f"Function call for job ID:[{message.job_id[-12:]}] completed, sending the result...")
-                
-                # Create result message
-                result_message = EdgeNetMessage.create_result_message(
-                    self.session_id, message.job_id, result
-                )
-                await self.send(result_message)
-                
-                logging.debug(f"Result message sent! Now sending FINISH message for job ID:{message.job_id[-12:]}...")
-                
-                await self.send_job_finished(message.job_id)
-
-                logging.debug(f"FINISH message sent for job ID:[{message.job_id[-12:]}]!")
-            
-            # If message is a polling command
-            if message.msg_type == MSG_COMMAND_POLL:
-                function_call = self.get_function(message.function_name)
-                result = function_call(message, *message.args, **message.kwargs)
-                await self.send_job_finished(message.job_id)
-
             if message.msg_type == MSG_TERMINATE:
                 await self._close()
                 if self.terminate_on_receive:
                     os.kill(os.getpid(), 9)
+
+            t = threading.Thread(target=self.parse_message, args=(message,))
+            t.start()
+            # asyncio.create_task(self._parse_message(msg))
+            
+
+    async def _parse_message(self, message):
+        # If message is a command from the server:
+        if message.msg_type == MSG_COMMAND:
+            logging.debug(f"Message is of COMMAND type, running function with name [{message.function_name}] with job ID:[{message.job_id[-12:]}]")
+
+            func = self.get_function(message.function_name)
+            result = func(*message.args, **message.kwargs)
+            
+            logging.debug(f"Function call for job ID:[{message.job_id[-12:]}] completed, sending the result...")
+            
+            # Create result message
+            result_message = EdgeNetMessage.create_result_message(
+                self.session_id, message.job_id, result
+            )
+            await self.send(result_message)
+            
+            logging.debug(f"Result message sent! Now sending FINISH message for job ID:{message.job_id[-12:]}...")
+            
+            await self.send_job_finished(message.job_id)
+
+            logging.debug(f"FINISH message sent for job ID:[{message.job_id[-12:]}]!")
+        
+        # If message is a polling command
+        if message.msg_type == MSG_COMMAND_POLL:
+            func = self.get_function(message.function_name)
+            result = func(message, *message.args, **message.kwargs)
+            await self.send_job_finished(message.job_id)
+
+    def parse_message(self, msg):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(self._parse_message(msg))
+
+    async def call_function_in_other_thread(self, func, msg, *args, **kwargs):
+        def func_call(func, result_list, *args, **kwargs):
+            result_list.append(func(*args, **kwargs))
+
+        result_list = []
+        full_args = [func, result_list] + list(args)
+        function_thread = threading.Thread(
+            target=func_call, args=full_args, kwargs=kwargs, daemon=True
+        )
+
+        function_thread.start()
+        function_thread.join()
+
+        return result_list[0]
+
+    async def call_polling_function_in_other_thread(self, func, msg, *args, **kwargs):
+        def func_call(func, msg, result_list, *args, **kwargs):
+            result_list.append(func(msg, *args, **kwargs))
+
+        result_list = []
+        full_args = [func, msg, result_list] + list(args)
+        function_thread = threading.Thread(
+            target=func_call, args=full_args, kwargs=kwargs, daemon=True
+        )
+
+        function_thread.start()
+        function_thread.join()
+
+        await self.send_job_finished(msg.job_id)
+
+        return result_list[0]
 
     async def send(self, message: EdgeNetMessage):
         msg_dict = {

@@ -412,6 +412,43 @@ class TestNetwork(unittest.TestCase):
             [call(result) for result in job.results]
         )
 
+    def test_server_client_asyncio(self):
+        """
+        Tests if client can handle receiving commands simultaneously
+        """
+        client = EdgeNetClient(self.server_url)
+        client.run(run_forever=False)
+
+        sleep_seconds = 10
+        times = 3
+
+        function_name = "sleep_for"
+        def sleep_for(i):
+            time.sleep(sleep_seconds)
+            return i*2
+
+        client.register_function(function_name, sleep_for)
+
+        expected_results = [i*2 for i in range(times)]
+        jobs = []
+        
+        self.server.sleep(0.1)
+
+        for i in range(times):
+            args = [i]
+            job = self.server.send_command_external(
+                client.session_id, function_name, is_polling=False,
+                *args
+            )
+            jobs.append(job)
+
+        self.server.sleep(sleep_seconds+1) # Should be done by then
+
+        # Check correctness of results
+        for i in range(times):
+            self.assertIn(expected_results[i], jobs[i].raw_results)
+
+
     def test_server_client_metrics(self):
         """
         Tests asynchronous polling commands called to client (with args and kwargs)
