@@ -19,6 +19,7 @@ RTSP_URL = f"rtsp://{SERVER_HOSTNAME}:{RTSP_PORT}"
 
 # Network metrics config
 NET_INTERFACE = "eth0"
+RUN_NETEM_DELAYS = False
 
 # Logging config
 LOGGING_LEVEL       = logging.INFO
