@@ -82,10 +82,9 @@ nmonitor.stop_capturing()
 # Terminate client
 server.send_terminate_external(session_id)
 
-# Get total number of bytes
-bytes_captured = nmonitor.get_all_packet_size_tcp(SERVER_PORT)
-logging.info(f"Total bytes captured: {bytes_captured}")
-
 # Record results
 experiment.end_experiment()
 experiment.to_csv()
+# Get total number of bytes
+bytes_captured = nmonitor.get_all_packet_size_tcp(SERVER_PORT)
+logging.info(f"Total bytes captured: {bytes_captured}")
