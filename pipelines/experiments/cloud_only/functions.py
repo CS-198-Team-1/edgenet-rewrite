@@ -33,7 +33,7 @@ def start_streaming(timer, sender, video_path, stream_to_url):
 
 @uses_timer
 @uses_gpx(GPX_PATH)
-def capture_video(gpxc, timer, stream_url, frames_per_second=15, target="all", results_list=[]):
+def capture_video(gpxc, timer, stream_url, frames_per_second=30, target="all", results_list=[]):
     # OpenCV initialization
     timer.start_section("cloud-initialization")
 

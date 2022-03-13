@@ -1,4 +1,4 @@
-import re, datetime, cv2, easyocr, numpy as np, tensorflow as tf, subprocess
+import re, datetime, cv2, numpy as np, tensorflow as tf, subprocess
 import sys, socket, time
 from edgenet.job import EdgeNetJobResult
 from gpx import uses_gpx
@@ -32,7 +32,6 @@ def start_streaming(timer, sender, video_path, stream_to_url):
 def capture_video(gpxc, timer, stream_url, frames_per_second=15, target="all", results_list=[]):
     # OpenCV initialization
     timer.start_section("cloud-initialization")
-
     while True:
         cap = cv2.VideoCapture(stream_url)
         try:   
@@ -144,7 +143,7 @@ def execute_text_recognition(gpxc, boxes, frame, confidence, time_captured, resu
         max( 0, int(x1*1920) ) : min( 1920, int(x2*1920) )
     ]
     confidence_in_100 = int( confidence * 100 )
-
+    import easyocr
     # Execute text recognition
     reader = easyocr.Reader(["en"])
     text = reader.readtext(save_frame, allowlist=ALLOWED_CHARS)

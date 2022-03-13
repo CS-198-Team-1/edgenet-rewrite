@@ -1,7 +1,7 @@
 from edgenet.client import EdgeNetClient, EdgeNetMessage
 from gpx import uses_gpx
 from config import *
-from .functions import *
+from .functions import start_streaming
 
 # Initialize client
 client = EdgeNetClient(f"ws://{SERVER_HOSTNAME}:{SERVER_PORT}")
