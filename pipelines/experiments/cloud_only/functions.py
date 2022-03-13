@@ -33,7 +33,7 @@ def start_streaming(timer, sender, video_path, stream_to_url):
 
 @uses_timer
 @uses_gpx(GPX_PATH)
-def capture_video(gpxc, timer, stream_url, frames_per_second=30, target="all", results_list=[]):
+def capture_video(gpxc, timer, stream_url, frames_per_second=CAPTURE_FPS, target="all", results_list=[]):
     # OpenCV initialization
     timer.start_section("cloud-initialization")
 
@@ -75,15 +75,22 @@ def capture_video(gpxc, timer, stream_url, frames_per_second=30, target="all", r
 
     while cap.isOpened():
 
-
         frame_counter += 1
 
-        if frame_counter % every_n_frames != 0:
-            continue # Only start execution every n frames
+        if frame_counter % VIDEO_FPS == 0:
+            required_delta = datetime.timedelta(
+                seconds=frame_counter // VIDEO_FPS
+            ) # Make sure we don't "look into the future"
+            while (datetime.datetime.now() - start_time) < required_delta:
+                time.sleep(0.001)
+                pass # Loop while sufficient time has not yet passed
 
         timer.start_looped_section("cloud-opencv-read")
         ret, frame = cap.read() # Capture each frame of video
         timer.end_looped_section("cloud-opencv-read")
+
+        if frame_counter % every_n_frames != 0:
+            continue # Only start execution every n frames
 
         if not ret or frame is None:
             # raise LPRException("cap.read() returned invalid values!")

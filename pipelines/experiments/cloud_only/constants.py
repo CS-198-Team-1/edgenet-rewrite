@@ -2,8 +2,8 @@ EDGE_FUNCTION_NAME = "edge_stream_video"
 EXPERIMENT_VIDEO_PATH = "experiment-files/test_video_4.mp4"
 VIDEO_WIDTH  = 1920
 VIDEO_HEIGHT = 1080
-VIDEO_FPS    = 60
-CAPTURE_FPS  = 30
+VIDEO_FPS    = 30
+CAPTURE_FPS  = 15
 
 BASE_CONFIDENCE = 0.3
 

@@ -1,4 +1,5 @@
 import threading, subprocess
+from .constants import *
 from edgenet.server import EdgeNetServer
 from config import *
 from .functions import *
@@ -47,7 +48,7 @@ job = server.send_command_external(
     is_polling=True
 )
 
-cloud_metrics, job.results = capture_video(f"rtsp://0.0.0.0:8554/{session_id}")
+cloud_metrics, job.results = capture_video(f"rtsp://0.0.0.0:8554/{session_id}", frames_per_second=CAPTURE_FPS)
 
 # Append job to experiment container
 experiment.jobs.append(job) # TODO: Figure out how to extract metrics from cloud-only function
