@@ -1,4 +1,4 @@
-import re, datetime, cv2, easyocr, numpy as np, tensorflow as tf
+import re, datetime, cv2, numpy as np, tensorflow as tf
 from gpx import uses_gpx
 from metrics.time import uses_timer
 from .constants import *
@@ -138,7 +138,7 @@ def execute_text_recognition_tflite(sender, gpxc, boxes, frame, confidence, inte
     output_data = interpreter.get_tensor(output_details[0]['index'])
     decoded = tf.keras.backend.ctc_decode(output_data,(24,),greedy=False)
     text = ""
-    for i in np.array(decoded[0]).reshape(24):
+    for i in np.array(decoded[0][0][0]):
         if i >-1:
             text += DECODE_DICT[i]
     # Do nothing if text is empty
