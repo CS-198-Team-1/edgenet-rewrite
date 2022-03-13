@@ -2,11 +2,12 @@ import threading
 from edgenet.server import EdgeNetServer
 from config import *
 from .functions import *
+from .constants import CAPTURE_FPS
 from metrics.experiment import Experiment
 from metrics.network import NetworkMonitor
 
 PIPELINE = "edge_only"
-EXPERIMENT_ID = "edge_only"
+EXPERIMENT_ID = f"edge_only{CAPTURE_FPS}"
 NETEM_DELAYS = [
     "100ms", "200ms"
 ]

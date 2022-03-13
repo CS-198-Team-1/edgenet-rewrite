@@ -66,7 +66,8 @@ def capture_video(gpxc, timer, stream_url, frames_per_second=CAPTURE_FPS, target
     recog_output_details = recog_interpreter.get_output_details()
 
     frame_counter = 0 # Frame counter
-    every_n_frames = VIDEO_FPS // frames_per_second # Check every n frames
+    every_n_frames = frames_per_second/float(VIDEO_FPS) # Check every n frames
+    capture_acc = 0
     start_time = datetime.datetime.now()
 
     print(start_time.isoformat(), gpxc.start_time.isoformat())
@@ -89,8 +90,14 @@ def capture_video(gpxc, timer, stream_url, frames_per_second=CAPTURE_FPS, target
         ret, frame = cap.read() # Capture each frame of video
         timer.end_looped_section("cloud-opencv-read")
 
-        if frame_counter % every_n_frames != 0:
-            continue # Only start execution every n frames
+        capture_acc += every_n_frames
+        if capture_acc < 1.0:
+            continue
+        else:
+            capture_acc -= 1.0        
+
+        #if frame_counter % every_n_frames != 0:
+        #    continue # Only start execution every n frames
 
         if not ret or frame is None:
             # raise LPRException("cap.read() returned invalid values!")
