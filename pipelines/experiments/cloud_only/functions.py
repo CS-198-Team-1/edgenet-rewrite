@@ -68,7 +68,7 @@ def capture_video(gpxc, timer, stream_url, frames_per_second=CAPTURE_FPS, target
     frame_counter = 0 # Frame counter
     every_n_frames = frames_per_second/float(VIDEO_FPS) # Check every n frames
     capture_acc = 0
-    start_time = datetime.datetime.now()
+    start_time = gpxc.start_time
 
     print(start_time.isoformat(), gpxc.start_time.isoformat())
 
