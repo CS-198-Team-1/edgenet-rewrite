@@ -102,11 +102,6 @@ def capture_video(gpxc, timer, sender, video_path, frames_per_second=CAPTURE_FPS
             if confidence > BASE_CONFIDENCE:
                 timer.start_looped_section("edge-plate-recognition")
 
-                # Get exact time captured based on frame # and FPS
-                seconds_elapsed = frame_counter / float(VIDEO_FPS)
-                delta = datetime.timedelta(seconds=seconds_elapsed)
-                time_captured = start_time + delta
-
                 execute_text_recognition_tflite(
                     sender, gpxc, 
                     boxes[0][i], frame, confidence,
