@@ -4,15 +4,14 @@ from config import *
 from .functions import *
 
 
-for i in range(1,30,1):
-    # Initialize client
-    client = EdgeNetClient(f"ws://{SERVER_HOSTNAME}:{SERVER_PORT}")
-    
-    # Use decorator
-    edge_only_video_capture = client.uses_sender(capture_video)
-    
-    # Register functions
-    client.register_function(EDGE_ONLY_FUNCTION_NAME, edge_only_video_capture)
-    
-    # Run client
-    client.run()
+# Initialize client
+client = EdgeNetClient(f"ws://{SERVER_HOSTNAME}:{SERVER_PORT}")
+
+# Use decorator
+edge_only_video_capture = client.uses_sender(capture_video)
+
+# Register functions
+client.register_function(EDGE_ONLY_FUNCTION_NAME, edge_only_video_capture)
+
+# Run client
+client.run()
