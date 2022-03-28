@@ -6,13 +6,15 @@ from config import *
 
 class NetworkMonitor:
     def __init__(self, interface, experiment_id=None):
-        self.interface = interface
         self.experiment_id = experiment_id or str(uuid.uuid4())
+        self.interface = interface
+        self.ifb = "ifb0"
 
         self.process = None
         self.captures = {}
 
         self.delay = None
+        self.rate = None
 
         # For scapy
         self.packets = None
@@ -42,6 +44,44 @@ class NetworkMonitor:
         _p = subprocess.call(args)
 
         self.delay = None
+
+    def implement_rate(self, rate):
+        if self.rate:
+            raise NetworkMonitorException("Tried to implement a rate constraint when there is already an existing one.")
+        
+        # For outgoing
+        args = [
+            "tc", "qdisc", "add", "dev", self.interface,
+            "root", "netem", "rate", rate
+        ]
+        _p = subprocess.call(args)
+        
+        # For incoming
+        args = [
+            "tc", "qdisc", "add", "dev", self.ifb,
+            "root", "netem", "rate", rate
+        ]
+        _p = subprocess.call(args)
+        
+        self.rate = rate
+    
+    def release_rate(self):
+        if not self.rate:
+            raise NetworkMonitorException("Attempted to release a rate constraint that was never implemented.")
+
+        # For outgoing
+        args = [
+            "tc", "qdisc", "del", "dev", self.interface
+        ]
+        _p = subprocess.call(args)
+
+        # For incoming
+        args = [
+            "tc", "qdisc", "del", "dev", self.ifb
+        ]
+        _p = subprocess.call(args)
+
+        self.rate = None
 
     def start_capturing(self):
         if self.process:

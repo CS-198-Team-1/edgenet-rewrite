@@ -40,6 +40,9 @@ rtsp_url = f"{RTSP_URL}/{session_id}"
 # cap_thread = threading.Thread(target=capture_video, args=[rtsp_url], kwargs={"results_list": r_list})
 # cap_thread.start()
 
+# Implement rate constraint
+nmonitor.implement_rate("256kbit")
+
 # Send command to start publishing the video:
 job = server.send_command_external(
     session_id, EDGE_FUNCTION_NAME,
@@ -55,6 +58,9 @@ experiment.jobs.append(job) # TODO: Figure out how to extract metrics from cloud
 # Wait until job is finished, then terminate
 job.wait_until_finished()
 job.wait_for_metrics()
+
+# Release rate constraint
+nmonitor.release_rate()
 
 # # Get results from the cloud side, and delete pickle
 # cloud_metrics = Timer.wait_for_and_consume_pickle("legacy-cloud-only.pickle")
