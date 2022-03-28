@@ -1,9 +1,13 @@
 import threading, subprocess
+from .constants import *
 from edgenet.server import EdgeNetServer
 from config import *
 from .functions import *
 from metrics.experiment import Experiment
 from metrics.network import NetworkMonitor
+
+PIPELINE = "cloud_only"
+EXPERIMENT_ID = f"cloud_only{CAPTURE_FPS}"
 
 # Initialize server
 server = EdgeNetServer("0.0.0.0", SERVER_PORT)
@@ -24,7 +28,7 @@ logging.info("Waiting for five seconds for client to connect...")
 server.sleep(5)
 
 # Initialize experiment and bandwidth monitoring after sleep
-experiment = Experiment("legacy.edge_only")
+experiment = Experiment(PIPELINE, experiment_id=EXPERIMENT_ID)
 nmonitor = NetworkMonitor("lo", experiment.experiment_id)
 nmonitor.start_capturing()
 
@@ -47,10 +51,10 @@ nmonitor.implement_rate("256kbit")
 job = server.send_command_external(
     session_id, EDGE_FUNCTION_NAME,
     EXPERIMENT_VIDEO_PATH, rtsp_url,
-    is_polling=True
+    is_polling=True, job_id=EXPERIMENT_ID
 )
 
-cloud_metrics, job.results = capture_video(f"rtsp://0.0.0.0:8554/{session_id}")
+cloud_metrics, job.results = capture_video(f"rtsp://0.0.0.0:8554/{session_id}", frames_per_second=CAPTURE_FPS)
 
 # Append job to experiment container
 experiment.jobs.append(job) # TODO: Figure out how to extract metrics from cloud-only function

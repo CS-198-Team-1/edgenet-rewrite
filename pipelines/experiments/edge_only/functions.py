@@ -16,7 +16,7 @@ lph_pattern = re.compile("^[A-Z][A-Z][A-Z][0-9][0-9][0-9][0-9]?$")
 # We will relegate adding the uses_sender decorator in client.py
 @uses_timer
 @uses_gpx(GPX_PATH)
-def capture_video(gpxc, timer, sender, video_path, frames_per_second=15, target="all"):
+def capture_video(gpxc, timer, sender, video_path, frames_per_second=CAPTURE_FPS, target="all"):
     # OpenCV initialization
     timer.start_section("edge-initialization")
 
@@ -34,7 +34,8 @@ def capture_video(gpxc, timer, sender, video_path, frames_per_second=15, target=
     recog_output_details = recog_interpreter.get_output_details()
 
     frame_counter = 0 # Frame counter
-    every_n_frames = VIDEO_FPS // frames_per_second # Check every n frames
+    every_n_frames = frames_per_second/float(VIDEO_FPS) # Check every n frames
+    capture_acc = 0
     start_time = datetime.datetime.now()
 
     print(start_time.isoformat(), gpxc.start_time.isoformat())
@@ -53,12 +54,15 @@ def capture_video(gpxc, timer, sender, video_path, frames_per_second=15, target=
             while (datetime.datetime.now() - start_time) < required_delta:
                 pass # Loop while sufficient time has not yet passed
 
-        if frame_counter % every_n_frames != 0:
-            continue # Only start execution every n frames
-
         timer.start_looped_section("edge-frame-capture")
         ret, frame = cap.read() # Capture each frame of video
         timer.end_looped_section("edge-frame-capture")
+
+        capture_acc += every_n_frames
+        if capture_acc < 1.0:
+            continue
+        else:
+            capture_acc -= 1.0    
 
         if not ret or frame is None:
             # raise LPRException("cap.read() returned invalid values!")
@@ -97,11 +101,6 @@ def capture_video(gpxc, timer, sender, video_path, frames_per_second=15, target=
         for i, confidence in enumerate(output_data[0]):
             if confidence > BASE_CONFIDENCE:
                 timer.start_looped_section("edge-plate-recognition")
-
-                # Get exact time captured based on frame # and FPS
-                seconds_elapsed = frame_counter / float(VIDEO_FPS)
-                delta = datetime.timedelta(seconds=seconds_elapsed)
-                time_captured = start_time + delta
 
                 execute_text_recognition_tflite(
                     sender, gpxc, 

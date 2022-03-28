@@ -2,11 +2,13 @@ import threading
 from edgenet.server import EdgeNetServer
 from config import *
 from .functions import *
+from .constants import CAPTURE_FPS
 from metrics.experiment import Experiment
 from metrics.network import NetworkMonitor
 
+
 PIPELINE = "edge_only"
-EXPERIMENT_ID = "edge_only"
+EXPERIMENT_ID = f"edge_only{CAPTURE_FPS}"
 NETEM_DELAYS = [
     "100ms", "200ms"
 ]
@@ -82,10 +84,9 @@ nmonitor.stop_capturing()
 # Terminate client
 server.send_terminate_external(session_id)
 
-# Get total number of bytes
-bytes_captured = nmonitor.get_all_packet_size_tcp(SERVER_PORT)
-logging.info(f"Total bytes captured: {bytes_captured}")
-
 # Record results
 experiment.end_experiment()
 experiment.to_csv()
+# Get total number of bytes
+bytes_captured = nmonitor.get_all_packet_size_tcp(SERVER_PORT)
+logging.info(f"Total bytes captured: {bytes_captured}")

@@ -3,6 +3,7 @@ from gpx import uses_gpx
 from config import *
 from .functions import *
 
+
 # Initialize client
 client = EdgeNetClient(f"ws://{SERVER_HOSTNAME}:{SERVER_PORT}")
 
