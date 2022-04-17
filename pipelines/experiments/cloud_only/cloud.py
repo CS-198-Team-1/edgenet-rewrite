@@ -7,7 +7,8 @@ from metrics.experiment import Experiment
 from metrics.network import NetworkMonitor
 
 PIPELINE = "cloud_only"
-EXPERIMENT_ID = f"cloud_only{CAPTURE_FPS}"
+RATE_CONSTRAINT = "1Mbit"
+EXPERIMENT_ID = f"cloud_only_{RATE_CONSTRAINT}"
 
 # Initialize server
 server = EdgeNetServer("0.0.0.0", SERVER_PORT)
@@ -29,7 +30,7 @@ server.sleep(5)
 
 # Initialize experiment and bandwidth monitoring after sleep
 experiment = Experiment(PIPELINE, experiment_id=EXPERIMENT_ID)
-nmonitor = NetworkMonitor("lo", experiment.experiment_id)
+nmonitor = NetworkMonitor(NET_INTERFACE, experiment.experiment_id)
 nmonitor.start_capturing()
 
 # Client should be the first in the session dict:
@@ -45,7 +46,7 @@ rtsp_url = f"{RTSP_URL}/{session_id}"
 # cap_thread.start()
 
 # Implement rate constraint
-nmonitor.implement_rate("256kbit")
+nmonitor.implement_rate(RATE_CONSTRAINT)
 
 # Send command to start publishing the video:
 job = server.send_command_external(
