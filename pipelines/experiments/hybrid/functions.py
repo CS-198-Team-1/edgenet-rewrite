@@ -96,8 +96,10 @@ def capture_video(gpxc, timer, sender, video_path, frames_per_second=CAPTURE_FPS
         timer.end_looped_section("edge-plate-detection")
 
         # For index and confidence value of the first class [0]
+        ctr = 0
         for i, confidence in enumerate(output_data[0]):
-            if confidence > BASE_CONFIDENCE:
+            if confidence > BASE_CONFIDENCE and ctr == 0:
+                ctr +=1
                 timer.start_looped_section("edge-plate-transmission")
                 _box = boxes[0][i]
                 x1, x2, y1, y2 = _box[1], _box[3], _box[0], _box[2]
@@ -111,6 +113,7 @@ def capture_video(gpxc, timer, sender, video_path, frames_per_second=CAPTURE_FPS
                 test_image = np.expand_dims(test_image,axis=0)
                 test_image = test_image.astype(np.float32)
 
+              
                 # Encode image
                 pickled_image = codecs.encode(pickle.dumps(test_image), "base64").decode()
 
@@ -140,6 +143,7 @@ def execute_text_recognition_tflite(gpxc, cropped_frame, confidence, frame_count
     RECOGNITION_FAILED = (False, 0, 0, 0, 0)
 
     # Unpack frame
+    c_frame = cropped_frame
     cropped_frame = pickle.loads(codecs.decode(cropped_frame.encode(), "base64"))
 
     # Execute text recognition

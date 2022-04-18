@@ -19,7 +19,7 @@ class EdgeNetMessage:
 
     @classmethod
     def create_from_json(cls, raw_json):
-        json_dict = json.loads(raw_json)
+        json_dict = json.loads(raw_json,strict=False)
         return cls(**json_dict)
 
     @classmethod
