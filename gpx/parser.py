@@ -19,6 +19,21 @@ def parse_gpx_and_sync_now(gpx_file_path):
     return gpx_collection
 
 
+def parse_gpx_and_sync(gpx_file_path, base_time):
+    gpx_collection = parse_gpx(gpx_file_path)
+    
+    # Get first entry and get its offset to current time
+    first_entry = gpx_collection.entries[0]
+    delta = (base_time - first_entry.dttm)
+
+    for entry in gpx_collection.entries:
+        entry.dttm += delta
+
+    gpx_collection.start_time = base_time
+
+    return gpx_collection
+
+
 def parse_gpx(gpx_file_path):
     # Get GPX file
     gpx_file = open(gpx_file_path, 'r')

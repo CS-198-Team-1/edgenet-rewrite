@@ -44,13 +44,13 @@ def capture_video(gpxc, timer, sender, video_path, frames_per_second=CAPTURE_FPS
 
         frame_counter += 1
 
-        if frame_counter % VIDEO_FPS == 0:
-            required_delta = datetime.timedelta(
-                seconds=frame_counter // VIDEO_FPS
-            ) # Make sure we don't "look into the future"
+        # if frame_counter % VIDEO_FPS == 0:
+        required_delta = datetime.timedelta(
+            seconds=frame_counter / VIDEO_FPS
+        ) # Make sure we don't "look into the future"
 
-            while (datetime.datetime.now() - start_time) < required_delta:
-                pass # Loop while sufficient time has not yet passed
+        while (datetime.datetime.now() - start_time) < required_delta:
+            pass # Loop while sufficient time has not yet passed
 
         timer.start_looped_section("edge-frame-capture")
         ret, frame = cap.read() # Capture each frame of video
@@ -127,6 +127,7 @@ def capture_video(gpxc, timer, sender, video_path, frames_per_second=CAPTURE_FPS
                     "cropped_frame": pickled_image,
                     "confidence": int( confidence * 100 ),
                     "frame_counter": frame_counter,
+                    "start_time": gpxc.start_time.isoformat()
                 })
                 timer.end_looped_section("edge-plate-transmission")
 
@@ -138,7 +139,6 @@ def capture_video(gpxc, timer, sender, video_path, frames_per_second=CAPTURE_FPS
     timer.end_function() # Record end of whole function
     sender.send_metrics(timer) # Send metrics to cloud
 
-@uses_gpx(GPX_PATH)
 def execute_text_recognition_tflite(gpxc, cropped_frame, confidence, frame_counter):
     RECOGNITION_FAILED = (False, 0, 0, 0, 0, 0, 0)
 
@@ -176,6 +176,9 @@ def execute_text_recognition_tflite(gpxc, cropped_frame, confidence, frame_count
     # Get GPX entry
     gpx_entry = gpxc.get_latest_entry(time_captured)
     lat, lng = gpx_entry.latlng
+
+    print(f"\n\nI:{time_captured.isoformat()} ({gpxc.start_time.isoformat()} + {frame_counter}/{VIDEO_FPS})")
+    print(f"R:{time_now.isoformat()}\n\n")
 
     return (
         True, license_plate, lat, lng, confidence, 

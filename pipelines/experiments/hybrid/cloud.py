@@ -7,6 +7,8 @@ from metrics.experiment import Experiment
 from metrics.network import NetworkMonitor
 from metrics.time import Timer
 from datetime import datetime
+from gpx import parser
+from dateutil import parser as dttm_parser
 
 PIPELINE = "hybrid"
 EXPERIMENT_ID = f"hybrid_{CAPTURE_FPS}"
@@ -51,12 +53,27 @@ rtsp_url = f"{RTSP_URL}/{session_id}"
 
 cloud_metrics = Timer("cloud_recognizer")
 
+gpxc = None
+
 # Callback to recognize plate:
 def callback(job_result):
+    global gpxc
+
     result = job_result.result
 
+    # Sync GPX
+    if gpxc is None:
+        print("\n\nSYNCING!!!!!\n\n")
+        print("\n\nSYNCING!!!!!\n\n")
+        print("\n\nSYNCING!!!!!\n\n")
+        start_time = dttm_parser.parse(result["start_time"]).replace(tzinfo=None)
+        gpxc = parser.parse_gpx_and_sync(GPX_PATH, start_time)
+    
+    # Remove "start_time"
+    del job_result.result["start_time"]
+
     cloud_metrics.start_looped_section("cloud-recognition")
-    plate_detected, plate_text, lat, lng, conf, r, n = execute_text_recognition_tflite(**result)
+    plate_detected, plate_text, lat, lng, conf, r, n = execute_text_recognition_tflite(**result, gpxc=gpxc)
     cloud_metrics.end_looped_section("cloud-recognition")
     
     if plate_detected:
