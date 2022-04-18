@@ -140,7 +140,7 @@ def capture_video(gpxc, timer, sender, video_path, frames_per_second=CAPTURE_FPS
 
 @uses_gpx(GPX_PATH)
 def execute_text_recognition_tflite(gpxc, cropped_frame, confidence, frame_counter):
-    RECOGNITION_FAILED = (False, 0, 0, 0, 0)
+    RECOGNITION_FAILED = (False, 0, 0, 0, 0, 0, 0)
 
     # Unpack frame
     c_frame = cropped_frame
@@ -177,7 +177,11 @@ def execute_text_recognition_tflite(gpxc, cropped_frame, confidence, frame_count
     gpx_entry = gpxc.get_latest_entry(time_captured)
     lat, lng = gpx_entry.latlng
 
-    return (True, license_plate, lat, lng, confidence)
+    return (
+        True, license_plate, lat, lng, confidence, 
+        time_captured.isoformat(), 
+        time_now.isoformat()
+    )
 
     # Send result to cloud
     # sender.send_result({

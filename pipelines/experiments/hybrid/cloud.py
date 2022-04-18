@@ -56,11 +56,20 @@ def callback(job_result):
     result = job_result.result
 
     cloud_metrics.start_looped_section("cloud-recognition")
-    plate_detected, plate_text, lat, lng, conf = execute_text_recognition_tflite(**result)
+    plate_detected, plate_text, lat, lng, conf, r, n = execute_text_recognition_tflite(**result)
     cloud_metrics.end_looped_section("cloud-recognition")
     
     if plate_detected:
         logging.info(f"Recognized plate {plate_text} at {lat}, {lng}! Detected at {job_result.sent_dttm} and recognized at {datetime.now().isoformat()}")
+
+    # Modify results for .csv:
+    del job_result.result["cropped_frame"]
+    job_result.result["time_captured"] = r
+    job_result.result["time_now"]      = n
+    job_result.result["plate"]         = plate_text
+    job_result.result["lat"]           = lat
+    job_result.result["lng"]           = lng
+
 
 # Send command to start detecting the video:
 job = server.send_command_external(
