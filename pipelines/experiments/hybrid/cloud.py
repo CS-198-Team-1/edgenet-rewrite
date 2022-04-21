@@ -5,10 +5,13 @@ from config import *
 from .functions import *
 from metrics.experiment import Experiment
 from metrics.network import NetworkMonitor
+from metrics.time import Timer
+from datetime import datetime
+from gpx import parser
+from dateutil import parser as dttm_parser
 
-PIPELINE = "cloud_only"
-RATE_CONSTRAINT = "1Mbit"
-EXPERIMENT_ID = f"cloud_only_{RATE_CONSTRAINT}"
+PIPELINE = "hybrid"
+EXPERIMENT_ID = f"hybrid_{CAPTURE_FPS}"
 
 # Initialize server
 server = EdgeNetServer("0.0.0.0", SERVER_PORT)
@@ -30,7 +33,7 @@ server.sleep(5)
 
 # Initialize experiment and bandwidth monitoring after sleep
 experiment = Experiment(PIPELINE, experiment_id=EXPERIMENT_ID)
-nmonitor = NetworkMonitor(NET_INTERFACE, experiment.experiment_id)
+nmonitor = NetworkMonitor("lo", experiment.experiment_id)
 nmonitor.start_capturing()
 
 # Client should be the first in the session dict:
@@ -46,16 +49,53 @@ rtsp_url = f"{RTSP_URL}/{session_id}"
 # cap_thread.start()
 
 # Implement rate constraint
-nmonitor.implement_rate(RATE_CONSTRAINT)
+# nmonitor.implement_rate("256kbit")
 
-# Send command to start publishing the video:
+cloud_metrics = Timer("cloud_recognizer")
+
+gpxc = None
+
+# Callback to recognize plate:
+def callback(job_result):
+    global gpxc
+
+    result = job_result.result
+
+    # Sync GPX
+    if gpxc is None:
+        print("\n\nSYNCING!!!!!\n\n")
+        print("\n\nSYNCING!!!!!\n\n")
+        print("\n\nSYNCING!!!!!\n\n")
+        start_time = dttm_parser.parse(result["start_time"]).replace(tzinfo=None)
+        gpxc = parser.parse_gpx_and_sync(GPX_PATH, start_time)
+    
+    # Remove "start_time"
+    del job_result.result["start_time"]
+
+    cloud_metrics.start_looped_section("cloud-recognition")
+    plate_detected, plate_text, lat, lng, conf, r, n = execute_text_recognition_tflite(**result, gpxc=gpxc)
+    cloud_metrics.end_looped_section("cloud-recognition")
+    
+    if plate_detected:
+        logging.info(f"Recognized plate {plate_text} at {lat}, {lng}! Detected at {job_result.sent_dttm} and recognized at {datetime.now().isoformat()}")
+
+    # Modify results for .csv:
+    del job_result.result["cropped_frame"]
+    job_result.result["time_captured"] = r
+    job_result.result["time_now"]      = n
+    job_result.result["plate"]         = plate_text
+    job_result.result["lat"]           = lat
+    job_result.result["lng"]           = lng
+
+
+# Send command to start detecting the video:
 job = server.send_command_external(
     session_id, EDGE_FUNCTION_NAME,
-    EXPERIMENT_VIDEO_PATH, rtsp_url,
-    is_polling=True, job_id=EXPERIMENT_ID
+    EXPERIMENT_VIDEO_PATH, 
+    is_polling=True, job_id=EXPERIMENT_ID,
+    callback=callback,
+    frames_per_second=CAPTURE_FPS
 )
-
-cloud_metrics, job.results = capture_video(f"rtsp://0.0.0.0:8554/{session_id}", frames_per_second=CAPTURE_FPS)
 
 # Append job to experiment container
 experiment.jobs.append(job) # TODO: Figure out how to extract metrics from cloud-only function
@@ -64,15 +104,15 @@ experiment.jobs.append(job) # TODO: Figure out how to extract metrics from cloud
 job.wait_until_finished()
 job.wait_for_metrics()
 
+# Register cloud metrics
+cloud_metrics.end_function()
+job.register_metrics(cloud_metrics)
+
 # Release rate constraint
-nmonitor.release_rate()
+# nmonitor.release_rate()
 
 # # Get results from the cloud side, and delete pickle
 # cloud_metrics = Timer.wait_for_and_consume_pickle("legacy-cloud-only.pickle")
-
-# Add cloud metrics and results
-job.register_metrics(cloud_metrics)
-# job.results = r_list
 
 # Clean up
 # cap_thread.join()

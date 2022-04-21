@@ -39,7 +39,7 @@ class NetworkMonitor:
             raise NetworkMonitorException("Attempted to release a delay that was never implemented.")
 
         args = [
-            "tc", "qdisc", "del", "dev", self.interface
+            "tc", "qdisc", "del", "dev", self.interface, "root"
         ]
         _p = subprocess.call(args)
 
@@ -71,13 +71,13 @@ class NetworkMonitor:
 
         # For outgoing
         args = [
-            "tc", "qdisc", "del", "dev", self.interface
+            "tc", "qdisc", "del", "dev", self.interface, "root"
         ]
         _p = subprocess.call(args)
 
         # For incoming
         args = [
-            "tc", "qdisc", "del", "dev", self.ifb
+            "tc", "qdisc", "del", "dev", self.ifb, "root"
         ]
         _p = subprocess.call(args)
 
