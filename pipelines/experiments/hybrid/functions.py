@@ -1,4 +1,5 @@
 import codecs, pickle, re, datetime, cv2, numpy as np, tensorflow as tf
+import tflite_runtime.interpreter as tflite
 from gpx import uses_gpx
 from metrics.time import uses_timer
 from .constants import *
@@ -9,7 +10,7 @@ CHARS_DICT = {char:i for i, char in enumerate(CHARS)}
 DECODE_DICT = {i:char for i, char in enumerate(CHARS)}
 
 #Initialize recognition model
-recog_interpreter = tf.lite.Interpreter(model_path=RECOG_MODEL_PATH)
+recog_interpreter = tflite.Interpreter(model_path=RECOG_MODEL_PATH)
 recog_interpreter.allocate_tensors()
 recog_input_details = recog_interpreter.get_input_details()
 recog_output_details = recog_interpreter.get_output_details()
@@ -29,7 +30,7 @@ def capture_video(gpxc, timer, sender, video_path, frames_per_second=CAPTURE_FPS
     timer.start_section("edge-initialization")
 
     cap = cv2.VideoCapture(video_path)
-    interpreter = tf.lite.Interpreter(model_path=MODEL_PATH, experimental_delegates = [tflite.load_delegate('libedgetpu.so.1')])
+    interpreter = tflite.Interpreter(model_path=MODEL_PATH, experimental_delegates = [tflite.load_delegate('libedgetpu.so.1')])
     interpreter.allocate_tensors()
 
     input_details = interpreter.get_input_details()
