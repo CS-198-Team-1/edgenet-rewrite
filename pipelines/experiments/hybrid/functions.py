@@ -17,6 +17,10 @@ recog_output_details = recog_interpreter.get_output_details()
 # License plate pattern for PH plates
 lph_pattern = re.compile("^[A-Z][A-Z][A-Z][0-9][0-9][0-9][0-9]?$")
 
+def get_boxes(boxes, shape):
+        return int(shape[0] * boxes[0]),int(shape[1] * boxes[1]), int(shape[0] * boxes[2]), int(shape[1] * boxes[3])
+
+
 # We will relegate adding the uses_sender decorator in client.py
 @uses_timer
 @uses_gpx(GPX_PATH)
@@ -25,7 +29,7 @@ def capture_video(gpxc, timer, sender, video_path, frames_per_second=CAPTURE_FPS
     timer.start_section("edge-initialization")
 
     cap = cv2.VideoCapture(video_path)
-    interpreter = tf.lite.Interpreter(model_path=MODEL_PATH)
+    interpreter = tf.lite.Interpreter(model_path=MODEL_PATH, experimental_delegates = [tflite.load_delegate('libedgetpu.so.1')])
     interpreter.allocate_tensors()
 
     input_details = interpreter.get_input_details()
@@ -73,8 +77,7 @@ def capture_video(gpxc, timer, sender, video_path, frames_per_second=CAPTURE_FPS
         # Execute detection:
         # -- Resize frame to 320x320 square
         resized = cv2.resize(frame, (320,320), interpolation=cv2.INTER_AREA)
-        input_data = resized.astype(np.float32)          # Set as 3D RGB float array
-        input_data /= 255.                               # Normalize
+        input_data = resized.astype(np.uint8)          # Set as 3D RGB float array
         input_data = np.expand_dims(input_data, axis=0)  # Batch dimension (wrap in 4D)
 
         # Initialize input tensor
