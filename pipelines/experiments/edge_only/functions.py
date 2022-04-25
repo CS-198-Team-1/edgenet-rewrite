@@ -1,4 +1,5 @@
 import re, datetime, cv2, numpy as np, tensorflow as tf
+import tflite_runtime.interpreter as tflite
 from gpx import uses_gpx
 from metrics.time import uses_timer
 from .constants import *
@@ -21,10 +22,10 @@ def capture_video(gpxc, timer, sender, video_path, frames_per_second=CAPTURE_FPS
     timer.start_section("edge-initialization")
 
     cap = cv2.VideoCapture(video_path)
-    interpreter = tf.lite.Interpreter(model_path=MODEL_PATH)
+    interpreter = tflite.Interpreter(model_path=MODEL_PATH)
     interpreter.allocate_tensors()
 
-    recog_interpreter = tf.lite.Interpreter(model_path=RECOG_MODEL_PATH)
+    recog_interpreter = tflite.Interpreter(model_path=RECOG_MODEL_PATH)
     recog_interpreter.allocate_tensors()
 
     input_details = interpreter.get_input_details()
