@@ -4,7 +4,7 @@ from config import *
 from .functions import *
 
 # Initialize client
-client = EdgeNetClient(f"ws://{SERVER_HOSTNAME}:{SERVER_PORT}")
+client = EdgeNetClient(f"ws://{SERVER_HOSTNAME}:{SERVER_PORT}", session_id=EDGE_IDENTIFICATION)
 
 # Use decorator
 edge_video_stream = client.uses_sender(start_streaming)

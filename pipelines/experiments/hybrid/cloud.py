@@ -28,8 +28,8 @@ server_thread = threading.Thread(target=server.run, daemon=True)
 server_thread.start()
 
 # Wait for 5 seconds for client to connect:
-logging.info("Waiting for five seconds for client to connect...")
-server.sleep(5)
+logging.info(f"Waiting for {SERVER_GRACE_IN_SECONDS} seconds for client to connect...")
+server.sleep(SERVER_GRACE_IN_SECONDS)
 
 # Initialize experiment and bandwidth monitoring after sleep
 experiment = Experiment(PIPELINE, experiment_id=EXPERIMENT_ID)

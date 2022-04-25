@@ -22,8 +22,8 @@ server_thread = threading.Thread(target=server.run, daemon=True)
 server_thread.start()
 
 # Wait for 5 seconds for client to connect:
-logging.info("Waiting for five seconds for client to connect...")
-server.sleep(5)
+logging.info(f"Waiting for {SERVER_GRACE_IN_SECONDS} seconds for client to connect...")
+server.sleep(SERVER_GRACE_IN_SECONDS)
 
 # Client should be the first in the session dict:
 session_id = [*server.sessions][0]

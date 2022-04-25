@@ -63,6 +63,7 @@ class EdgeNetServer:
                 session = EdgeNetSession.create_from_handshake(msg, websocket)
                 self.sessions[message.session_id] = session
                 logging.debug(f"Message was of CONNECTION type, successfully registered session ID:[{message.session_id[-12:]}].")
+                logging.info(f"Edge successfully connected with session ID:[{message.session_id}]")
 
             # If message is a job result
             if message.msg_type == MSG_RESULT:

@@ -3,7 +3,7 @@ from config import *
 from .functions import *
 
 # Initialize client
-client = EdgeNetClient(f"ws://{SERVER_HOSTNAME}:{SERVER_PORT}")
+client = EdgeNetClient(f"ws://{SERVER_HOSTNAME}:{SERVER_PORT}", session_id=EDGE_IDENTIFICATION)
 
 # Register functions
 # -- Edge-only add three numbers:

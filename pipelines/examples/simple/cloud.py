@@ -16,7 +16,7 @@ server_thread.start()
 
 # Wait for 5 seconds for client to connect:
 logging.info("Waiting for five seconds for client to connect...")
-server.sleep(5)
+server.sleep(SERVER_GRACE_IN_SECONDS)
 
 # Start experiment after the sleep
 experiment = Experiment("examples.simple")

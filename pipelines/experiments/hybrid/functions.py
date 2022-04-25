@@ -197,3 +197,16 @@ def execute_text_recognition_tflite(gpxc, cropped_frame, confidence, frame_count
     # })
 
 class LPRException(Exception): pass
+
+
+file_upload_queue = Queue()
+# file_upload_queue.put(...)
+
+# Edge:
+number_of_requests = int
+requests_remaining = number_of_requests
+
+while requests_remaining:
+    to_upload = file_upload_queue.get(timeout=100)
+    # do some shit
+    requests_remaining -= 1

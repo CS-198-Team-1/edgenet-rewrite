@@ -5,7 +5,7 @@ from .functions import *
 
 
 # Initialize client
-client = EdgeNetClient(f"ws://{SERVER_HOSTNAME}:{SERVER_PORT}")
+client = EdgeNetClient(f"ws://{SERVER_HOSTNAME}:{SERVER_PORT}", session_id=EDGE_IDENTIFICATION)
 
 # Use decorator
 edge_only_video_capture = client.uses_sender(capture_video)
