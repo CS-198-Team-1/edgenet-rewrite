@@ -36,10 +36,12 @@ experiment = Experiment(PIPELINE, experiment_id=EXPERIMENT_ID)
 nmonitor = NetworkMonitor("lo", experiment.experiment_id)
 nmonitor.start_capturing()
 
-# Client should be the first in the session dict:
-session_id = [*server.sessions][0]
+# Get all connected sessions:
+session_ids = [*server.sessions]
+# -- Quickly modify experiment ID to match session count
+experiment.experiment_id = f"{experiment.experiment_id}_{len(session_ids)}"
 
-logging.info("Running cloud-only execution...")
+logging.info("Running hybridized execution...")
 
 rtsp_url = f"{RTSP_URL}/{session_id}"
 
@@ -51,62 +53,75 @@ rtsp_url = f"{RTSP_URL}/{session_id}"
 # Implement rate constraint
 # nmonitor.implement_rate("256kbit")
 
-cloud_metrics = Timer("cloud_recognizer")
-
 gpxc = None
 
-# Callback to recognize plate:
-def callback(job_result):
-    global gpxc
+for iteration in range(REPEATS):
 
-    result = job_result.result
+    pending_jobs_and_cloud_metrics = []
 
-    # Sync GPX
-    if gpxc is None:
-        print("\n\nSYNCING!!!!!\n\n")
-        print("\n\nSYNCING!!!!!\n\n")
-        print("\n\nSYNCING!!!!!\n\n")
-        start_time = dttm_parser.parse(result["start_time"]).replace(tzinfo=None)
-        gpxc = parser.parse_gpx_and_sync(GPX_PATH, start_time)
-    
-    # Remove "start_time"
-    del job_result.result["start_time"]
+    for session_id in session_ids:
+        iteration_id = f"{session_id}_I{iteration}"
+        
+        cloud_metrics = Timer(f"cloud_metrics_{session_id}")
 
-    cloud_metrics.start_looped_section("cloud-recognition")
-    plate_detected, plate_text, lat, lng, conf, r, n = execute_text_recognition_tflite(**result, gpxc=gpxc)
-    cloud_metrics.end_looped_section("cloud-recognition")
-    
-    if plate_detected:
-        logging.info(f"Recognized plate {plate_text} at {lat}, {lng}! Detected at {job_result.sent_dttm} and recognized at {datetime.now().isoformat()}")
+        # Callback to recognize plate:
+        def callback(job_result):
+            global gpxc
 
-    # Modify results for .csv:
-    del job_result.result["cropped_frame"]
-    job_result.result["time_captured"] = r
-    job_result.result["time_now"]      = n
-    job_result.result["plate"]         = plate_text
-    job_result.result["lat"]           = lat
-    job_result.result["lng"]           = lng
+            result = job_result.result
 
+            # Sync GPX
+            if gpxc is None:
+                start_time = dttm_parser.parse(result["start_time"]).replace(tzinfo=None)
+                gpxc = parser.parse_gpx_and_sync(GPX_PATH, start_time)
+            
+            # Remove "start_time"
+            del job_result.result["start_time"]
 
-# Send command to start detecting the video:
-job = server.send_command_external(
-    session_id, EDGE_FUNCTION_NAME,
-    EXPERIMENT_VIDEO_PATH, 
-    is_polling=True, job_id=EXPERIMENT_ID,
-    callback=callback,
-    frames_per_second=CAPTURE_FPS
-)
+            cloud_metrics.start_looped_section("cloud-recognition")
+            plate_detected, plate_text, lat, lng, conf, r, n = execute_text_recognition_tflite(**result, gpxc=gpxc)
+            cloud_metrics.end_looped_section("cloud-recognition")
+            
+            if plate_detected:
+                logging.info(f"Recognized plate {plate_text} at {lat}, {lng}! Detected at {job_result.sent_dttm} and recognized at {datetime.now().isoformat()}")
 
-# Append job to experiment container
-experiment.jobs.append(job) # TODO: Figure out how to extract metrics from cloud-only function
+            # Modify results for .csv:
+            del job_result.result["cropped_frame"]
+            job_result.result["time_captured"] = r
+            job_result.result["time_now"]      = n
+            job_result.result["plate"]         = plate_text
+            job_result.result["lat"]           = lat
+            job_result.result["lng"]           = lng
 
-# Wait until job is finished, then terminate
-job.wait_until_finished()
-job.wait_for_metrics()
+        # Send command to start detecting the video:
+        job = server.send_command_external(
+            session_id, EDGE_FUNCTION_NAME,
+            EXPERIMENT_VIDEO_PATH, 
+            is_polling=True, job_id=f"{experiment.experiment_id}_{iteration_id}",
+            callback=callback,
+            frames_per_second=CAPTURE_FPS
+        )
 
-# Register cloud metrics
-cloud_metrics.end_function()
-job.register_metrics(cloud_metrics)
+        # Append job to experiment container
+        experiment.jobs.append(job) # TODO: Figure out how to extract metrics from cloud-only function
+
+        # Append to pending as a tuple
+        pending_jobs_and_cloud_metrics.append((job, cloud_metrics))
+
+    for job, cloud_metrics in pending_jobs_and_cloud_metrics:
+        # Wait until job is finished
+        job.wait_until_finished()
+
+        # Wait for edge-side metrics
+        job.wait_for_metrics()
+
+        # Register cloud metrics
+        cloud_metrics.end_function()
+        job.register_metrics(cloud_metrics)
+
+        # Finally, save as CSV
+        job.results_to_csv()
+
 
 # Release rate constraint
 # nmonitor.release_rate()
@@ -123,7 +138,6 @@ server.send_terminate_external(session_id)
 experiment.end_experiment()
 nmonitor.stop_capturing()
 experiment.to_csv()
-job.results_to_csv()
 
 # Display bandwidth usage
 websocket_usage = nmonitor.get_all_packet_size_tcp(SERVER_PORT)

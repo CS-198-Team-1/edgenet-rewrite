@@ -1,9 +1,10 @@
 import logging
 
 # Connection config
-SERVER_HOSTNAME     = "localhost"
-SERVER_PORT         = 8765
+SERVER_HOSTNAME          = "localhost"
+SERVER_PORT              = 8765
 SERVER_GRACE_IN_SECONDS  = 20
+REPEATS                  = 5
 
 EDGE_IDENTIFICATION      = None
 TERMINATE_CLIENTS_AFTER  = True

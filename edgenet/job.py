@@ -74,6 +74,7 @@ class EdgeNetJob:
         while not self.finished: time.sleep(0.01) # TODO: Improve this spin lock
 
     def wait_for_metrics(self, number_of_metrics=1):
+        print(len(self.metrics), number_of_metrics)
         while len(self.metrics) != number_of_metrics: time.sleep(0.01) # TODO: Improve this spin lock
 
     def results_to_csv(self):

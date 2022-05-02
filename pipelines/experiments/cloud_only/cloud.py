@@ -7,8 +7,8 @@ from metrics.experiment import Experiment
 from metrics.network import NetworkMonitor
 
 PIPELINE = "cloud_only"
-RATE_CONSTRAINT = "1Mbit"
-EXPERIMENT_ID = f"cloud_only_{RATE_CONSTRAINT}"
+# RATE_CONSTRAINT = "1Mbit"
+EXPERIMENT_ID = f"cloud_only_{CAPTURE_FPS}"
 
 # Initialize server
 server = EdgeNetServer("0.0.0.0", SERVER_PORT)
@@ -33,57 +33,73 @@ experiment = Experiment(PIPELINE, experiment_id=EXPERIMENT_ID)
 nmonitor = NetworkMonitor(NET_INTERFACE, experiment.experiment_id)
 nmonitor.start_capturing()
 
-# Client should be the first in the session dict:
-session_id = [*server.sessions][0]
+# Get all connected sessions:
+session_ids = [*server.sessions]
+# -- Quickly modify experiment ID to match session count
+experiment.experiment_id = f"{experiment.experiment_id}_{len(session_ids)}"
 
 logging.info("Running cloud-only execution...")
 
-rtsp_url = f"{RTSP_URL}/{session_id}"
+# Repeat REPEATS times:
+for iteration in range(REPEATS):
 
-# # Start capturing the stream
-# r_list = []
-# cap_thread = threading.Thread(target=capture_video, args=[rtsp_url], kwargs={"results_list": r_list})
-# cap_thread.start()
+    pending_threads = []
+    pending_jobs = []
 
-# Implement rate constraint
-nmonitor.implement_rate(RATE_CONSTRAINT)
+    for session_id in session_ids:
+        iteration_id = f"{session_id}_I{iteration}"
+        rtsp_url = f"{RTSP_URL}/{session_id}"
 
-# Send command to start publishing the video:
-job = server.send_command_external(
-    session_id, EDGE_FUNCTION_NAME,
-    EXPERIMENT_VIDEO_PATH, rtsp_url,
-    is_polling=True, job_id=EXPERIMENT_ID
-)
+        # Send command to start publishing the video:
+        job = server.send_command_external(
+            session_id, EDGE_FUNCTION_NAME,
+            EXPERIMENT_VIDEO_PATH, rtsp_url,
+            is_polling=True, job_id=f"{experiment.experiment_id}_{iteration_id}"
+        )
 
-cloud_metrics, job.results = capture_video(f"rtsp://0.0.0.0:8554/{session_id}", frames_per_second=CAPTURE_FPS)
+        def job_with_metrics(_job):
+            metrics, _ = capture_video(
+                f"rtsp://0.0.0.0:8554/{session_id}", 
+                frames_per_second=CAPTURE_FPS,
+                results_list=_job.results)
+            # Automatically attach metrics after it is done
+            _job.register_metrics(metrics)
 
-# Append job to experiment container
-experiment.jobs.append(job) # TODO: Figure out how to extract metrics from cloud-only function
+        cloud_metrics = None
+        capture_thread = threading.Thread(target=job_with_metrics, args=[job,])
+        capture_thread.start()
 
-# Wait until job is finished, then terminate
-job.wait_until_finished()
-job.wait_for_metrics()
+        # Append job to experiment container
+        experiment.jobs.append(job)
 
-# Release rate constraint
-nmonitor.release_rate()
+        # Append to pending
+        pending_jobs.append(job)
+        pending_threads.append(capture_thread)
 
-# # Get results from the cloud side, and delete pickle
-# cloud_metrics = Timer.wait_for_and_consume_pickle("legacy-cloud-only.pickle")
+    for thread in pending_threads:
+        thread.join()
+        logging.info(f"Capture thread successfully joined.")
 
-# Add cloud metrics and results
-job.register_metrics(cloud_metrics)
-# job.results = r_list
+    for job in pending_jobs:
+        # Wait until job is finished, then terminate
+        job.wait_until_finished()
+        job.wait_for_metrics(number_of_metrics=2) # Since we have cloud-side metrics too
+        job.results_to_csv()
 
+        
 # Clean up
-# cap_thread.join()
 rtsp_server.terminate()
-server.send_terminate_external(session_id)
+
+# Terminate clients if config is set to yes
+if TERMINATE_CLIENTS_AFTER:
+    for session_id in session_ids:
+        server.send_terminate_external(session_id)
 
 # Record results
 experiment.end_experiment()
-nmonitor.stop_capturing()
 experiment.to_csv()
-job.results_to_csv()
+# Stop packet capture
+nmonitor.stop_capturing()
 
 # Display bandwidth usage
 websocket_usage = nmonitor.get_all_packet_size_tcp(SERVER_PORT)
