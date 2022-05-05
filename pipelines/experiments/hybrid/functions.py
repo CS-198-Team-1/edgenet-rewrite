@@ -36,8 +36,6 @@ def capture_video(gpxc, timer, sender, video_path, frames_per_second=CAPTURE_FPS
     capture_acc = 0
     start_time = datetime.datetime.now()
 
-    print(start_time.isoformat(), gpxc.start_time.isoformat())
-
     timer.end_section("edge-initialization")
 
     while cap.isOpened():
@@ -176,9 +174,6 @@ def execute_text_recognition_tflite(gpxc, cropped_frame, confidence, frame_count
     # Get GPX entry
     gpx_entry = gpxc.get_latest_entry(time_captured)
     lat, lng = gpx_entry.latlng
-
-    print(f"\n\nI:{time_captured.isoformat()} ({gpxc.start_time.isoformat()} + {frame_counter}/{VIDEO_FPS})")
-    print(f"R:{time_now.isoformat()}\n\n")
 
     return (
         True, license_plate, lat, lng, confidence, 

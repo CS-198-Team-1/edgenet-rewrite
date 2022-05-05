@@ -6,9 +6,7 @@ from .functions import *
 from metrics.experiment import Experiment
 from metrics.network import NetworkMonitor
 
-PIPELINE = "cloud_only"
-# RATE_CONSTRAINT = "1Mbit"
-EXPERIMENT_ID = f"cloud_only_{CAPTURE_FPS}"
+PIPELINE = "cloud-heavy"
 
 # Initialize server
 server = EdgeNetServer("0.0.0.0", SERVER_PORT)
@@ -28,20 +26,23 @@ server_thread.start()
 logging.info(f"Waiting for {SERVER_GRACE_IN_SECONDS} seconds for client to connect...")
 server.sleep(SERVER_GRACE_IN_SECONDS)
 
-# Initialize experiment and bandwidth monitoring after sleep
-experiment = Experiment(PIPELINE, experiment_id=EXPERIMENT_ID)
-nmonitor = NetworkMonitor(NET_INTERFACE, experiment.experiment_id)
-nmonitor.start_capturing()
-
 # Get all connected sessions:
 session_ids = [*server.sessions]
-# -- Quickly modify experiment ID to match session count
-experiment.experiment_id = f"{experiment.experiment_id}_{len(session_ids)}"
+# -- Initialize experiment with formatted name:
+experiment_id = "_".join( map(str, [
+    PIPELINE, CAPTURE_FPS, 
+    len(session_ids), # Num. of edge instances
+    BW_CONSTRAINT,
+    ]) )
+experiment = Experiment(PIPELINE, experiment_id=experiment_id)
 
 logging.info("Running cloud-only execution...")
 
 # Repeat REPEATS times:
 for iteration in range(REPEATS):
+    # -- Start capture
+    nmonitor = NetworkMonitor(NET_INTERFACE, f"{experiment.experiment_id}_I{iteration}")
+    nmonitor.start_capturing()
 
     pending_threads = []
     pending_jobs = []
@@ -86,6 +87,8 @@ for iteration in range(REPEATS):
         job.wait_for_metrics(number_of_metrics=2) # Since we have cloud-side metrics too
         job.results_to_csv()
 
+    # Stop capturing for this session
+    nmonitor.stop_capturing()
         
 # Clean up
 rtsp_server.terminate()
@@ -98,12 +101,3 @@ if TERMINATE_CLIENTS_AFTER:
 # Record results
 experiment.end_experiment()
 experiment.to_csv()
-# Stop packet capture
-nmonitor.stop_capturing()
-
-# Display bandwidth usage
-websocket_usage = nmonitor.get_all_packet_size_tcp(SERVER_PORT)
-rtsp_usage = nmonitor.get_all_packet_size_tcp(RTSP_PORT)
-
-logging.info(f"Total bytes through websockets: {websocket_usage}")
-logging.info(f"Total bytes through RTSP: {rtsp_usage}")

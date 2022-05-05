@@ -1,5 +1,4 @@
 import threading, subprocess
-from .constants import *
 from edgenet.server import EdgeNetServer
 from config import *
 from .functions import *
@@ -16,13 +15,6 @@ EXPERIMENT_ID = f"hybrid_{CAPTURE_FPS}"
 # Initialize server
 server = EdgeNetServer("0.0.0.0", SERVER_PORT)
 
-# Start RTSP server
-rtsp_server = subprocess.Popen(
-    [f"./bin/{SYSTEM_ARCH}/rtsp-simple-server"], 
-    stdout=subprocess.DEVNULL,
-    stderr=subprocess.DEVNULL,
-)
-
 # Run server
 server_thread = threading.Thread(target=server.run, daemon=True)
 server_thread.start()
@@ -33,35 +25,32 @@ server.sleep(SERVER_GRACE_IN_SECONDS)
 
 # Initialize experiment and bandwidth monitoring after sleep
 experiment = Experiment(PIPELINE, experiment_id=EXPERIMENT_ID)
-nmonitor = NetworkMonitor("lo", experiment.experiment_id)
-nmonitor.start_capturing()
 
 # Get all connected sessions:
 session_ids = [*server.sessions]
 # -- Quickly modify experiment ID to match session count
-experiment.experiment_id = f"{experiment.experiment_id}_{len(session_ids)}"
+# -- Initialize experiment with formatted name:
+experiment_id = "_".join( map(str, [
+    PIPELINE, CAPTURE_FPS, 
+    len(session_ids), # Num. of edge instances
+    BW_CONSTRAINT,
+    ]) )
+experiment = Experiment(PIPELINE, experiment_id=experiment_id)
 
 logging.info("Running hybridized execution...")
 
-rtsp_url = f"{RTSP_URL}/{session_id}"
-
-# # Start capturing the stream
-# r_list = []
-# cap_thread = threading.Thread(target=capture_video, args=[rtsp_url], kwargs={"results_list": r_list})
-# cap_thread.start()
-
-# Implement rate constraint
-# nmonitor.implement_rate("256kbit")
-
-gpxc = None
-
 for iteration in range(REPEATS):
+    # -- Start capture
+    nmonitor = NetworkMonitor(NET_INTERFACE, f"{experiment.experiment_id}_I{iteration}")
+    nmonitor.start_capturing()
 
     pending_jobs_and_cloud_metrics = []
+    
+    gpxc = None # Reset gpxc every run
 
     for session_id in session_ids:
         iteration_id = f"{session_id}_I{iteration}"
-        
+
         cloud_metrics = Timer(f"cloud_metrics_{session_id}")
 
         # Callback to recognize plate:
@@ -122,26 +111,14 @@ for iteration in range(REPEATS):
         # Finally, save as CSV
         job.results_to_csv()
 
+    # Stop capturing for this session
+    nmonitor.stop_capturing()
 
-# Release rate constraint
-# nmonitor.release_rate()
-
-# # Get results from the cloud side, and delete pickle
-# cloud_metrics = Timer.wait_for_and_consume_pickle("legacy-cloud-only.pickle")
-
-# Clean up
-# cap_thread.join()
-rtsp_server.terminate()
-server.send_terminate_external(session_id)
+# Terminate clients if config is set to yes
+if TERMINATE_CLIENTS_AFTER:
+    for session_id in session_ids:
+        server.send_terminate_external(session_id)
 
 # Record results
 experiment.end_experiment()
-nmonitor.stop_capturing()
 experiment.to_csv()
-
-# Display bandwidth usage
-websocket_usage = nmonitor.get_all_packet_size_tcp(SERVER_PORT)
-rtsp_usage = nmonitor.get_all_packet_size_tcp(RTSP_PORT)
-
-logging.info(f"Total bytes through websockets: {websocket_usage}")
-logging.info(f"Total bytes through RTSP: {rtsp_usage}")

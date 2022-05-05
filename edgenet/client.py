@@ -54,6 +54,8 @@ class EdgeNetClient:
                 break
             except ConnectionRefusedError:
                 pass
+            except OSError:
+                pass
             # Exponential backoff
             logging.info(f"Failed to connect to server, trying again in {backoff_time} seconds.")
             await asyncio.sleep(backoff_time)

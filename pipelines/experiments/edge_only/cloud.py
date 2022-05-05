@@ -2,24 +2,13 @@ import threading
 from edgenet.server import EdgeNetServer
 from config import *
 from .functions import *
-from .constants import CAPTURE_FPS
 from metrics.experiment import Experiment
 from metrics.network import NetworkMonitor
 
-PIPELINE = "edge_only"
-EXPERIMENT_ID = f"edge_only_{CAPTURE_FPS}"
-
-# Initialize experiment
-experiment = Experiment(PIPELINE, experiment_id=EXPERIMENT_ID)
-
-# Initialize network monitor
-nmonitor = NetworkMonitor(NET_INTERFACE, experiment_id=experiment.experiment_id)
+PIPELINE = "edge-heavy"
 
 # Initialize server
 server = EdgeNetServer("0.0.0.0", SERVER_PORT)
-
-# Start packet capture
-nmonitor.start_capturing()
 
 # Run server
 server_thread = threading.Thread(target=server.run, daemon=True)
@@ -32,7 +21,13 @@ server.sleep(SERVER_GRACE_IN_SECONDS)
 # Get all connected sessions:
 session_ids = [*server.sessions]
 # -- Quickly modify experiment ID to match session count
-experiment.experiment_id = f"{experiment.experiment_id}_{len(session_ids)}"
+# -- Initialize experiment with formatted name:
+experiment_id = "_".join( map(str, [
+    PIPELINE, CAPTURE_FPS, 
+    len(session_ids), # Num. of edge instances
+    BW_CONSTRAINT,
+    ]) )
+experiment = Experiment(PIPELINE, experiment_id=experiment_id)
 
 # Define a callback function for incoming results:
 def callback(job_result):
@@ -41,10 +36,13 @@ def callback(job_result):
 
 logging.info("Running edge-only execution...")
 
-# Repeat REPEATS times:
 for iteration in range(REPEATS):
-    # Send commands to start capturing the video:
+    # -- Start capture
+    nmonitor = NetworkMonitor(NET_INTERFACE, f"{experiment.experiment_id}_I{iteration}")
+    nmonitor.start_capturing()
+
     pending_jobs = []
+
     for session_id in session_ids:
         iteration_id = f"{session_id}_I{iteration}"
         job = server.send_command_external(
@@ -75,6 +73,3 @@ if TERMINATE_CLIENTS_AFTER:
 # Record results
 experiment.end_experiment()
 experiment.to_csv()
-# Get total number of bytes
-bytes_captured = nmonitor.get_all_packet_size_tcp(SERVER_PORT)
-logging.info(f"Total bytes captured: {bytes_captured}")

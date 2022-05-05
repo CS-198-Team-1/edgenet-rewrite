@@ -4,10 +4,8 @@ import logging
 SERVER_HOSTNAME          = "localhost"
 SERVER_PORT              = 8765
 SERVER_GRACE_IN_SECONDS  = 20
-REPEATS                  = 5
-
-EDGE_IDENTIFICATION      = None
-TERMINATE_CLIENTS_AFTER  = True
+EDGE_IDENTIFICATION      = "local"
+TERMINATE_CLIENTS_AFTER  = True # Send a termination message after the experiment
 
 # System config
 SYSTEM_ARCH = "amd64" # For most Linux servers
@@ -15,8 +13,23 @@ SYSTEM_ARCH = "amd64" # For most Linux servers
 
 # Edgenet configuration
 # -- Kill script through sys.exit() when termination message is received:
+#    This is different to TERM..._AFTER, as when set to False, client will still
+#    run even though a termination messsage is received.
 # -- Note: this is overriden by test.py in order to do tests gracefully
 TERMINATE_CLIENTS_ON_RECEIVE = True
+
+# Experiment configuration
+# -- Video and GPX information
+EXPERIMENT_VIDEO_PATH = "experiment-files/test_video_4.mp4"
+GPX_PATH = "experiment-files/exp_1.gpx"
+VIDEO_WIDTH     = 1920
+VIDEO_HEIGHT    = 1080
+VIDEO_FPS       = 30
+BASE_CONFIDENCE = 0.3
+# -- Variables and constraints
+REPEATS        = 2
+CAPTURE_FPS    = 2
+BW_CONSTRAINT  = None # Set to None to remove constraint
 
 # Streaming config
 RTSP_PORT = 8554 # See rtsp-simple-server.yml:107 to change RTMP port as well.
@@ -24,7 +37,6 @@ RTSP_URL = f"rtsp://{SERVER_HOSTNAME}:{RTSP_PORT}"
 
 # Network metrics config
 NET_INTERFACE = "eth0"
-RUN_NETEM_DELAYS = False
 
 # Logging config
 LOGGING_LEVEL       = logging.INFO
