@@ -8,9 +8,20 @@ from metrics.time import Timer
 from datetime import datetime
 from gpx import parser
 from dateutil import parser as dttm_parser
+from argparse import ArgumentParser as ArgParser
 
 PIPELINE = "hybrid"
-EXPERIMENT_ID = f"hybrid_{CAPTURE_FPS}"
+
+# Parse arguments
+_parser = ArgParser(description="Execute the hybrid pipeline.")
+_parser.add_argument("--repeats", type=int, dest="REPEATS", default=REPEATS)
+_parser.add_argument("--bwconstraint", type=str, dest="BW_CONSTRAINT", default=BW_CONSTRAINT)
+
+_args = _parser.parse_args()
+
+# Override config
+REPEATS       = _args.REPEATS
+BW_CONSTRAINT = _args.BW_CONSTRAINT
 
 # Initialize server
 server = EdgeNetServer("0.0.0.0", SERVER_PORT)
@@ -22,9 +33,6 @@ server_thread.start()
 # Wait for 5 seconds for client to connect:
 logging.info(f"Waiting for {SERVER_GRACE_IN_SECONDS} seconds for client to connect...")
 server.sleep(SERVER_GRACE_IN_SECONDS)
-
-# Initialize experiment and bandwidth monitoring after sleep
-experiment = Experiment(PIPELINE, experiment_id=EXPERIMENT_ID)
 
 # Get all connected sessions:
 session_ids = [*server.sessions]
@@ -52,6 +60,10 @@ for iteration in range(REPEATS):
         iteration_id = f"{session_id}_I{iteration}"
 
         cloud_metrics = Timer(f"cloud_metrics_{session_id}")
+
+        # Implement constraint if it exists
+        if BW_CONSTRAINT:
+            nmonitor.implement_rate(BW_CONSTRAINT)
 
         # Callback to recognize plate:
         def callback(job_result):
@@ -111,7 +123,11 @@ for iteration in range(REPEATS):
         # Finally, save as CSV
         job.results_to_csv()
 
-    # Stop capturing for this session
+    # Release constraint if it exists
+    if BW_CONSTRAINT:
+        nmonitor.release_rate()
+
+    # Stop packet capture
     nmonitor.stop_capturing()
 
 # Terminate clients if config is set to yes

@@ -31,6 +31,8 @@ class NetworkMonitor:
             "root", "netem", "delay", delay
         ]
         _p = subprocess.call(args)
+        if _p:
+            raise NetworkMonitorException(f"Netem command failed with exit code {_p}. Are you sure you're running in sudo?")
         
         self.delay = delay
     
@@ -42,6 +44,8 @@ class NetworkMonitor:
             "tc", "qdisc", "del", "dev", self.interface, "root"
         ]
         _p = subprocess.call(args)
+        if _p:
+            raise NetworkMonitorException(f"Netem command failed with exit code {_p}. Are you sure you're running in sudo?")
 
         self.delay = None
 
@@ -55,6 +59,8 @@ class NetworkMonitor:
             "root", "netem", "rate", rate
         ]
         _p = subprocess.call(args)
+        if _p:
+            raise NetworkMonitorException(f"Netem command failed with exit code {_p}. Are you sure you're running in sudo?")
         
         # For incoming
         args = [
@@ -62,8 +68,12 @@ class NetworkMonitor:
             "root", "netem", "rate", rate
         ]
         _p = subprocess.call(args)
-        
+        if _p:
+            raise NetworkMonitorException(f"Netem command failed with exit code {_p}. Are you sure you're running in sudo?")
+
         self.rate = rate
+
+        logging.info(f"NetMonitor: {self.rate} constraint implemented.")
     
     def release_rate(self):
         if not self.rate:
@@ -74,12 +84,18 @@ class NetworkMonitor:
             "tc", "qdisc", "del", "dev", self.interface, "root"
         ]
         _p = subprocess.call(args)
+        if _p:
+            raise NetworkMonitorException(f"Netem command failed with exit code {_p}. Are you sure you're running in sudo?")
 
         # For incoming
         args = [
             "tc", "qdisc", "del", "dev", self.ifb, "root"
         ]
         _p = subprocess.call(args)
+        if _p:
+            raise NetworkMonitorException(f"Netem command failed with exit code {_p}. Are you sure you're running in sudo?")
+
+        logging.info(f"NetMonitor: {self.rate} constraint released.")
 
         self.rate = None
 

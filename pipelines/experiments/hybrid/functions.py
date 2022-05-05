@@ -44,7 +44,7 @@ def capture_video(gpxc, timer, sender, video_path, frames_per_second=CAPTURE_FPS
 
         # if frame_counter % VIDEO_FPS == 0:
         required_delta = datetime.timedelta(
-            seconds=frame_counter / VIDEO_FPS
+            seconds=frame_counter / float(VIDEO_FPS)
         ) # Make sure we don't "look into the future"
 
         while (datetime.datetime.now() - start_time) < required_delta:
@@ -111,7 +111,6 @@ def capture_video(gpxc, timer, sender, video_path, frames_per_second=CAPTURE_FPS
                 test_image = np.expand_dims(test_image,axis=0)
                 test_image = test_image.astype(np.float32)
 
-              
                 # Encode image
                 pickled_image = codecs.encode(pickle.dumps(test_image), "base64").decode()
 

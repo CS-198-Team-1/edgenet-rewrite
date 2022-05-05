@@ -27,7 +27,7 @@ VIDEO_HEIGHT    = 1080
 VIDEO_FPS       = 30
 BASE_CONFIDENCE = 0.3
 # -- Variables and constraints
-REPEATS        = 2
+REPEATS        = 5
 CAPTURE_FPS    = 2
 BW_CONSTRAINT  = None # Set to None to remove constraint
 
@@ -40,8 +40,8 @@ NET_INTERFACE = "eth0"
 
 # Logging config
 LOGGING_LEVEL       = logging.INFO
-LOGGING_FORMAT      = "[%(asctime)s] %(levelname)-8s %(message)s"
-LOGGING_DATEFMT     = "%y-%m-%d %H:%M:%S"
+LOGGING_FORMAT      = "[%(asctime)s.%(msecs)03d] %(levelname)-8s %(message)s"
+LOGGING_DATEFMT     = "%y-%m-%d %H:%M:%S.%f"
 
 # Logging setup
 logging.basicConfig(

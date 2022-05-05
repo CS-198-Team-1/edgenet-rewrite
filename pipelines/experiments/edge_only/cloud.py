@@ -41,6 +41,10 @@ for iteration in range(REPEATS):
     nmonitor = NetworkMonitor(NET_INTERFACE, f"{experiment.experiment_id}_I{iteration}")
     nmonitor.start_capturing()
 
+    # Implement constraint if it exists
+    if BW_CONSTRAINT:
+        nmonitor.implement_rate(BW_CONSTRAINT)
+
     pending_jobs = []
 
     for session_id in session_ids:
@@ -61,6 +65,10 @@ for iteration in range(REPEATS):
         # Wait for metrics transmission
         job.wait_for_metrics()
         job.results_to_csv()
+
+    # Release constraint if it exists
+    if BW_CONSTRAINT:
+        nmonitor.release_rate()
 
     # Stop packet capture
     nmonitor.stop_capturing()

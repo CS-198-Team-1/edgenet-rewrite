@@ -44,6 +44,10 @@ for iteration in range(REPEATS):
     nmonitor = NetworkMonitor(NET_INTERFACE, f"{experiment.experiment_id}_I{iteration}")
     nmonitor.start_capturing()
 
+    # Implement constraint if it exists
+    if BW_CONSTRAINT:
+        nmonitor.implement_rate(BW_CONSTRAINT)
+
     pending_threads = []
     pending_jobs = []
 
@@ -82,12 +86,16 @@ for iteration in range(REPEATS):
         logging.info(f"Capture thread successfully joined.")
 
     for job in pending_jobs:
-        # Wait until job is finished, then terminate
+        # Wait until job is finished
         job.wait_until_finished()
         job.wait_for_metrics(number_of_metrics=2) # Since we have cloud-side metrics too
         job.results_to_csv()
+    
+    # Release constraint if it exists
+    if BW_CONSTRAINT:
+        nmonitor.release_rate()
 
-    # Stop capturing for this session
+    # Stop packet capture
     nmonitor.stop_capturing()
         
 # Clean up

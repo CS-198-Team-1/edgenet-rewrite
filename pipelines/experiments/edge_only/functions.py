@@ -46,13 +46,12 @@ def capture_video(gpxc, timer, sender, video_path, frames_per_second=CAPTURE_FPS
 
         frame_counter += 1
 
-        if frame_counter % VIDEO_FPS == 0:
-            required_delta = datetime.timedelta(
-                seconds=frame_counter // VIDEO_FPS
-            ) # Make sure we don't "look into the future"
+        required_delta = datetime.timedelta(
+            seconds=frame_counter // VIDEO_FPS
+        ) # Make sure we don't "look into the future"
 
-            while (datetime.datetime.now() - start_time) < required_delta:
-                pass # Loop while sufficient time has not yet passed
+        while (datetime.datetime.now() - start_time) < required_delta:
+            pass # Loop while sufficient time has not yet passed
 
         timer.start_looped_section("edge-frame-capture")
         ret, frame = cap.read() # Capture each frame of video

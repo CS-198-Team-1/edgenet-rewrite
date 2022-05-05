@@ -6,10 +6,12 @@ from metrics.time import uses_timer, Timer
 from .constants import *
 from config import *
 
-
 CHARS = "ABCDEFGHIJKLMNPQRSTUVWXYZ0123456789" # exclude I, O
 CHARS_DICT = {char:i for i, char in enumerate(CHARS)}
 DECODE_DICT = {i:char for i, char in enumerate(CHARS)}
+
+# GPXC synchronization
+gpx_is_set = False
 
 # License plate pattern for PH plates
 lph_pattern = re.compile("^[A-Z][A-Z][A-Z][0-9][0-9][0-9][0-9]?$")
@@ -41,16 +43,18 @@ def capture_video(gpxc, timer, stream_url, frames_per_second=CAPTURE_FPS, target
         cap = cv2.VideoCapture(stream_url)
         try:   
             # Check if camera opened successfully
-            if (cap.isOpened()== True): 
-                print("[INFO] FOUND! Stream Link...")
+            if (cap.isOpened() == True): 
+                global gpx_is_set
+                if not gpx_is_set:
+                    gpxc.start_time = datetime.datetime.now() # TODO: Resync all changes to start_time
                 break
             # Else is important to display error message on the screen if can.isOpened returns false
             else:
-                print("[NO STREAM1]")
+                logging.info("Waiting for stream...")
         except socket.error:
-            print("[NO STREAM2]")
+            logging.info("Socket error!")
         except:
-            print("[FAILED]")
+            logging.info("Capture failed!")
         time.sleep(0.001)
 
     interpreter = tf.lite.Interpreter(model_path=MODEL_PATH)
