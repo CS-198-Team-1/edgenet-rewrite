@@ -44,9 +44,6 @@ def capture_video(gpxc, timer, stream_url, frames_per_second=CAPTURE_FPS, target
         try:   
             # Check if camera opened successfully
             if (cap.isOpened() == True): 
-                global gpx_is_set
-                if not gpx_is_set:
-                    gpxc.start_time = datetime.datetime.now() # TODO: Resync all changes to start_time
                 break
             # Else is important to display error message on the screen if can.isOpened returns false
             else:
@@ -78,17 +75,20 @@ def capture_video(gpxc, timer, stream_url, frames_per_second=CAPTURE_FPS, target
 
     timer.end_section("cloud-initialization")
 
+    global gpx_is_set
+    if not gpx_is_set:
+        gpxc.start_time = datetime.datetime.now() # TODO: Resync all changes to start_time
+        gpx_is_set = True
+
     while cap.isOpened():
 
         frame_counter += 1
 
-        if frame_counter % VIDEO_FPS == 0:
-            required_delta = datetime.timedelta(
-                seconds=frame_counter // VIDEO_FPS
-            ) # Make sure we don't "look into the future"
-            while (datetime.datetime.now() - start_time) < required_delta:
-                time.sleep(0.001)
-                pass # Loop while sufficient time has not yet passed
+        required_delta = datetime.timedelta(
+            seconds=frame_counter / VIDEO_FPS
+        ) # Make sure we don't "look into the future"
+        while (datetime.datetime.now() - start_time) < required_delta:
+            time.sleep(0.03) # "Sleep" lock
 
         timer.start_looped_section("cloud-opencv-read")
         ret, frame = cap.read() # Capture each frame of video

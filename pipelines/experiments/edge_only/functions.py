@@ -1,4 +1,4 @@
-import re, datetime, cv2, numpy as np, tensorflow as tf
+import re, datetime, time, cv2, numpy as np, tensorflow as tf
 from gpx import uses_gpx
 from metrics.time import uses_timer
 from .constants import *
@@ -47,11 +47,11 @@ def capture_video(gpxc, timer, sender, video_path, frames_per_second=CAPTURE_FPS
         frame_counter += 1
 
         required_delta = datetime.timedelta(
-            seconds=frame_counter // VIDEO_FPS
+            seconds=frame_counter / VIDEO_FPS
         ) # Make sure we don't "look into the future"
 
         while (datetime.datetime.now() - start_time) < required_delta:
-            pass # Loop while sufficient time has not yet passed
+            time.sleep(0.03) # Loop while sufficient time has not yet passed
 
         timer.start_looped_section("edge-frame-capture")
         ret, frame = cap.read() # Capture each frame of video
@@ -145,7 +145,7 @@ def execute_text_recognition_tflite(sender, gpxc, boxes, frame, confidence, inte
     text[:3].replace("0",'O')
 
     # Do nothing if not a valid plate number
-    if not lph_pattern.match(license_plate): return 
+    if not lph_pattern.match(license_plate): return None
 
     # A matching license plate is now found!
 
@@ -163,13 +163,17 @@ def execute_text_recognition_tflite(sender, gpxc, boxes, frame, confidence, inte
     print(f"License plate found! {license_plate} ({lat}, {lng})")
 
     # Send result to cloud
-    sender.send_result({
+    result = {
         "time_recognized": time_now.isoformat(),
         "time_captured": time_captured.isoformat(),
         "plate": license_plate,
         "confidence": confidence_in_100,
         "lat": lat,
         "lng": lng,
-    })
+    }
+    if time_now < time_captured:
+        raise Exception(f"Recognized before detected? {result}")
+    sender.send_result(result)
+    return result
 
 class LPRException(Exception): pass
