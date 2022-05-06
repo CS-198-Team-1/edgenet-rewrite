@@ -4,8 +4,22 @@ from config import *
 from .functions import *
 from metrics.experiment import Experiment
 from metrics.network import NetworkMonitor
+from argparse import ArgumentParser as ArgParser
 
 PIPELINE = "edge-heavy"
+
+# Parse arguments
+_parser = ArgParser(description="Execute the hybrid pipeline.")
+_parser.add_argument("--repeats", type=int, dest="REPEATS", default=REPEATS)
+_parser.add_argument("--bwconstraint", type=str, dest="BW_CONSTRAINT", default=BW_CONSTRAINT)
+_parser.add_argument("--port", type=str, dest="SERVER_PORT", default=SERVER_PORT)
+
+_args = _parser.parse_args()
+
+# Override config
+REPEATS       = _args.REPEATS
+BW_CONSTRAINT = _args.BW_CONSTRAINT
+SERVER_PORT   = _args.SERVER_PORT
 
 # Initialize server
 server = EdgeNetServer("0.0.0.0", SERVER_PORT)
