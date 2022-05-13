@@ -7,6 +7,8 @@ all_results = glob.glob("./*.results.csv")
 # Build statistics dictionary
 statistics = {}
 for _fname in all_results:
+    if "rpi" not in _fname: continue
+
     # Get experiment information from filename:
     fname = os.path.basename(_fname)[:-12]
     pipeline, capture_rate, edge_n, bw_constraint, session_id, iteration = fname.split("_")
@@ -33,7 +35,11 @@ for _fname in all_results:
             ctr_seconds = (result_time - captured_time).total_seconds()
 
             if ctr_seconds < 0:
-                raise Exception(f"{_fname},{ctr_seconds}, {result_time}, {captured_time}")
+                if pipeline == "hybrid":
+                    ctr_seconds = (result_time - captured_time).total_seconds() + 28800
+                # else:
+                #     raise Exception(f"{_fname},{ctr_seconds}, {result_time}, {captured_time}")
+                ctr_seconds = max(0, ctr_seconds)
 
             # Add count and acc. sum per hierarchy:
             hierarchy = ["pipeline", "capture_rate", "edge_n", "bw_constraint"]
